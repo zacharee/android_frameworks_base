@@ -239,6 +239,12 @@ class DisplayContent {
         int left = (physWidth - width) / 2;
         int height = mDisplayInfo.logicalHeight;
         int top = (physHeight - height) / 2;
+
+        if (mDisplayInfo.signBoardHeight > 0) {
+            left = 0;
+            top = 0;
+        }
+
         out.set(left, top, left + width, top + height);
     }
 

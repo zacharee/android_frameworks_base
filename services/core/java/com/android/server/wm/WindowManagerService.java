@@ -204,6 +204,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_INPUT_METHOD_DIALOG;
 import static android.view.WindowManager.LayoutParams.TYPE_NAVIGATION_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION;
 import static android.view.WindowManager.LayoutParams.TYPE_QS_DIALOG;
+import static android.view.WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import static android.view.WindowManager.LayoutParams.TYPE_VOICE_INTERACTION;
@@ -1918,7 +1919,7 @@ public class WindowManagerService extends IWindowManager.Stub
                 attachedWindow = windowForClientLocked(null, attrs.token, false);
                 if (attachedWindow == null) {
                     Slog.w(TAG_WM, "Attempted to add window with token that is not a window: "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_SUBWINDOW_TOKEN;
                 }
                 if (attachedWindow.mAttrs.type >= FIRST_SUB_WINDOW
@@ -1937,37 +1938,38 @@ public class WindowManagerService extends IWindowManager.Stub
             boolean addToken = false;
             WindowToken token = mTokenMap.get(attrs.token);
             AppWindowToken atoken = null;
+            AppWindowToken signBoardToken = null;
             boolean addToastWindowRequiresToken = false;
 
             if (token == null) {
                 if (type >= FIRST_APPLICATION_WINDOW && type <= LAST_APPLICATION_WINDOW) {
                     Slog.w(TAG_WM, "Attempted to add application window with unknown token "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
                 if (type == TYPE_INPUT_METHOD) {
                     Slog.w(TAG_WM, "Attempted to add input method window with unknown token "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
                 if (type == TYPE_VOICE_INTERACTION) {
                     Slog.w(TAG_WM, "Attempted to add voice interaction window with unknown token "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
                 if (type == TYPE_WALLPAPER) {
                     Slog.w(TAG_WM, "Attempted to add wallpaper window with unknown token "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
                 if (type == TYPE_DREAM) {
                     Slog.w(TAG_WM, "Attempted to add Dream window with unknown token "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
                 if (type == TYPE_QS_DIALOG) {
                     Slog.w(TAG_WM, "Attempted to add QS dialog window with unknown token "
-                          + attrs.token + ".  Aborting.");
+                            + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
                 if (type == TYPE_ACCESSIBILITY_OVERLAY) {
@@ -1990,11 +1992,11 @@ public class WindowManagerService extends IWindowManager.Stub
                 atoken = token.appWindowToken;
                 if (atoken == null) {
                     Slog.w(TAG_WM, "Attempted to add window with non-application token "
-                          + token + ".  Aborting.");
+                            + token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_NOT_APP_TOKEN;
                 } else if (atoken.removed) {
                     Slog.w(TAG_WM, "Attempted to add window with exiting application token "
-                          + token + ".  Aborting.");
+                            + token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_APP_EXITING;
                 }
                 if (type == TYPE_APPLICATION_STARTING && atoken.firstWindowDrawn) {
@@ -2007,25 +2009,25 @@ public class WindowManagerService extends IWindowManager.Stub
                 if (token.windowType != TYPE_INPUT_METHOD) {
                     Slog.w(TAG_WM, "Attempted to add input method window with bad token "
                             + attrs.token + ".  Aborting.");
-                      return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
+                    return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
             } else if (type == TYPE_VOICE_INTERACTION) {
                 if (token.windowType != TYPE_VOICE_INTERACTION) {
                     Slog.w(TAG_WM, "Attempted to add voice interaction window with bad token "
                             + attrs.token + ".  Aborting.");
-                      return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
+                    return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
             } else if (type == TYPE_WALLPAPER) {
                 if (token.windowType != TYPE_WALLPAPER) {
                     Slog.w(TAG_WM, "Attempted to add wallpaper window with bad token "
                             + attrs.token + ".  Aborting.");
-                      return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
+                    return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
             } else if (type == TYPE_DREAM) {
                 if (token.windowType != TYPE_DREAM) {
                     Slog.w(TAG_WM, "Attempted to add Dream window with bad token "
                             + attrs.token + ".  Aborting.");
-                      return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
+                    return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
             } else if (type == TYPE_ACCESSIBILITY_OVERLAY) {
                 if (token.windowType != TYPE_ACCESSIBILITY_OVERLAY) {
@@ -2048,6 +2050,11 @@ public class WindowManagerService extends IWindowManager.Stub
                             + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
+            } else if (type == TYPE_SIGNBOARD_NORMAL) {
+                attrs.token = null;
+                signBoardToken = token.appWindowToken;
+                token = new WindowToken(this, null, type, false);
+                addToken = true;
             } else if (token.appWindowToken != null) {
                 Slog.w(TAG_WM, "Non-null appWindowToken for system window of type=" + type);
                 // It is not valid to use an app token with other system types; we will
@@ -7696,6 +7703,13 @@ public class WindowManagerService extends IWindowManager.Stub
         displayInfo.logicalDensityDpi = displayContent.mBaseDisplayDensity;
         displayInfo.appWidth = appWidth;
         displayInfo.appHeight = appHeight;
+        
+        if (mRotation == Surface.ROTATION_0 || mRotation == Surface.ROTATION_180) {
+            displayInfo.logicalHeight -= displayInfo.signBoardHeight;
+        } else {
+            displayInfo.logicalWidth -= displayInfo.signBoardHeight;
+        }
+
         displayInfo.getLogicalMetrics(mRealDisplayMetrics,
                 CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null);
         displayInfo.getAppMetrics(mDisplayMetrics);
@@ -7709,7 +7723,7 @@ public class WindowManagerService extends IWindowManager.Stub
                 displayContent.getDisplayId(), displayInfo);
 
         displayContent.mBaseDisplayRect.set(0, 0, dw, dh);
-        if (false) {
+        if (true) {
             Slog.i(TAG_WM, "Set app display size: " + appWidth + " x " + appHeight);
         }
 
@@ -11113,7 +11127,19 @@ public class WindowManagerService extends IWindowManager.Stub
         displayInfo.overscanTop = rect.top;
         displayInfo.overscanRight = rect.right;
         displayInfo.overscanBottom = rect.bottom;
+        
+        if (displayId == Display.DEFAULT_DISPLAY) {
+            displayInfo.signBoardHeight = 160;
+        } else {
+            displayInfo.signBoardHeight = 0;
+        }
+
         mDisplayManagerInternal.setDisplayInfoOverrideFromWindowManager(displayId, displayInfo);
+
+//        if (displayId == Display.DEFAULT_DISPLAY) {
+//            mDisplayManagerInternal.setDisplayOffsets(Display.DEFAULT_DISPLAY, 0, 160);
+//        }
+
         configureDisplayPolicyLocked(displayContent);
 
         // TODO: Create an input channel for each display with touch capability.
