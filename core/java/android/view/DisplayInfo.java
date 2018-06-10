@@ -237,6 +237,11 @@ public final class DisplayInfo implements Parcelable {
      * </p>
      */
     public String ownerPackageName;
+    
+    /**
+     * Height for second screen, if default display
+     */
+    public int signBoardHeight;
 
     public static final Creator<DisplayInfo> CREATOR = new Creator<DisplayInfo>() {
         @Override
@@ -298,6 +303,7 @@ public final class DisplayInfo implements Parcelable {
                 && presentationDeadlineNanos == other.presentationDeadlineNanos
                 && state == other.state
                 && ownerUid == other.ownerUid
+                && signBoardHeight == other.signBoardHeight
                 && Objects.equal(ownerPackageName, other.ownerPackageName);
     }
 
@@ -341,6 +347,7 @@ public final class DisplayInfo implements Parcelable {
         state = other.state;
         ownerUid = other.ownerUid;
         ownerPackageName = other.ownerPackageName;
+        signBoardHeight = other.signBoardHeight;
     }
 
     public void readFromParcel(Parcel source) {
@@ -385,6 +392,7 @@ public final class DisplayInfo implements Parcelable {
         ownerUid = source.readInt();
         ownerPackageName = source.readString();
         uniqueId = source.readString();
+        signBoardHeight = source.readInt();
     }
 
     @Override
@@ -428,6 +436,7 @@ public final class DisplayInfo implements Parcelable {
         dest.writeInt(ownerUid);
         dest.writeString(ownerPackageName);
         dest.writeString(uniqueId);
+        dest.writeInt(signBoardHeight);
     }
 
     @Override

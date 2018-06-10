@@ -663,6 +663,21 @@ public interface WindowManager extends ViewManager {
          * End of types of system windows.
          */
         public static final int LAST_SYSTEM_WINDOW      = 2999;
+        
+        /**
+         * Begin SignBoard Windows
+        */
+        public static final int FIRST_SIGNBOARD_WINDOW = 3000;
+        
+        /**
+         * Normal SignBoard Window object
+        */
+        public static final int TYPE_SIGNBOARD_NORMAL = FIRST_SIGNBOARD_WINDOW + 1;
+        
+        /**
+         * End SignBoard Windows
+        */
+        public static final int LAST_SIGNBOARD_WINDOW = 3999;
 
         /**
          * Return true if the window type is an alert window.

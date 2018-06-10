@@ -257,7 +257,7 @@ public final class DisplayManagerService extends SystemService {
                 true /*allowIsolated*/);
         publishLocalService(DisplayManagerInternal.class, new LocalService());
         publishLocalService(DisplayTransformManager.class, new DisplayTransformManager());
-    }
+        }
 
     @Override
     public void onBootPhase(int phase) {
