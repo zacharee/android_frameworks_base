@@ -1163,6 +1163,11 @@ class DisplayContent extends WindowContainer<DisplayContent.DisplayChildWindowCo
         mDisplayInfo.logicalDensityDpi = mBaseDisplayDensity;
         mDisplayInfo.appWidth = appWidth;
         mDisplayInfo.appHeight = appHeight;
+        if (mRotation == Surface.ROTATION_0 || mRotation == Surface.ROTATION_180) {
+            mDisplayInfo.logicalHeight -= mDisplayInfo.signBoardHeight;
+        } else {
+            mDisplayInfo.logicalWidth -= mDisplayInfo.signBoardHeight;
+        }
         if (isDefaultDisplay) {
             mDisplayInfo.getLogicalMetrics(mRealDisplayMetrics,
                     CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null);
@@ -1628,6 +1633,10 @@ class DisplayContent extends WindowContainer<DisplayContent.DisplayChildWindowCo
         int left = (physWidth - width) / 2;
         int height = mDisplayInfo.logicalHeight;
         int top = (physHeight - height) / 2;
+        if (mDisplayInfo.signBoardHeight > 0) {
+            left = 0;
+            top = 0;
+        }
         out.set(left, top, left + width, top + height);
     }
 
