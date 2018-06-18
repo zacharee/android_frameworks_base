@@ -243,6 +243,11 @@ class RootWindowContainer extends WindowContainer<DisplayContent> {
         displayInfo.overscanTop = rect.top;
         displayInfo.overscanRight = rect.right;
         displayInfo.overscanBottom = rect.bottom;
+        if (displayId == Display.DEFAULT_DISPLAY) {
+            displayInfo.signBoardHeight = 160;
+        } else {
+            displayInfo.signBoardHeight = 0;
+        }
         if (mService.mDisplayManagerInternal != null) {
             mService.mDisplayManagerInternal.setDisplayInfoOverrideFromWindowManager(
                     displayId, displayInfo);

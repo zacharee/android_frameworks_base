@@ -42,6 +42,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_NAVIGATION_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_NAVIGATION_BAR_PANEL;
 import static android.view.WindowManager.LayoutParams.TYPE_PHONE;
 import static android.view.WindowManager.LayoutParams.TYPE_POINTER;
+import static android.view.WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
 import static android.view.WindowManager.LayoutParams.TYPE_PRESENTATION;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIORITY_PHONE;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION;
@@ -891,6 +892,7 @@ public interface WindowManagerPolicy {
                 return  31;
             case TYPE_BOOT_PROGRESS:
                 return  32;
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_POINTER:
                 // the (mouse) pointer layer
                 return  33;

@@ -239,6 +239,11 @@ public final class DisplayInfo implements Parcelable {
     public String ownerPackageName;
 
     /**
+     * Height for second screen, if default display
+     */
+    public int signBoardHeight;
+
+    /**
      * @hide
      * Get current remove mode of the display - what actions should be performed with the display's
      * content when it is removed.
@@ -307,6 +312,7 @@ public final class DisplayInfo implements Parcelable {
                 && presentationDeadlineNanos == other.presentationDeadlineNanos
                 && state == other.state
                 && ownerUid == other.ownerUid
+                && signBoardHeight == other.signBoardHeight
                 && Objects.equal(ownerPackageName, other.ownerPackageName)
                 && removeMode == other.removeMode;
     }
@@ -351,6 +357,7 @@ public final class DisplayInfo implements Parcelable {
         state = other.state;
         ownerUid = other.ownerUid;
         ownerPackageName = other.ownerPackageName;
+        signBoardHeight = other.signBoardHeight;
         removeMode = other.removeMode;
     }
 
@@ -396,6 +403,7 @@ public final class DisplayInfo implements Parcelable {
         ownerUid = source.readInt();
         ownerPackageName = source.readString();
         uniqueId = source.readString();
+        signBoardHeight = source.readInt();
         removeMode = source.readInt();
     }
 
@@ -440,6 +448,7 @@ public final class DisplayInfo implements Parcelable {
         dest.writeInt(ownerUid);
         dest.writeString(ownerPackageName);
         dest.writeString(uniqueId);
+        dest.writeInt(signBoardHeight);
         dest.writeInt(removeMode);
     }
 
