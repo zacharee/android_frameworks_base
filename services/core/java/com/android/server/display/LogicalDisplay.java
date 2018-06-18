@@ -148,6 +148,7 @@ final class LogicalDisplay {
                 mInfo.logicalDensityDpi = mOverrideDisplayInfo.logicalDensityDpi;
                 mInfo.physicalXDpi = mOverrideDisplayInfo.physicalXDpi;
                 mInfo.physicalYDpi = mOverrideDisplayInfo.physicalYDpi;
+                mInfo.signBoardHeight = mOverrideDisplayInfo.signBoardHeight;
             }
         }
         return mInfo;
@@ -369,6 +370,45 @@ final class LogicalDisplay {
         }
         int displayRectTop = (physHeight - displayRectHeight) / 2;
         int displayRectLeft = (physWidth - displayRectWidth) / 2;
+
+        if (displayInfo.signBoardHeight > 0 && (displayDeviceInfo.flags & Display.FLAG_SUPPORTS_PROTECTED_BUFFERS) != 0) {
+            if (orientation == Surface.ROTATION_0 || orientation == Surface.ROTATION_180) {
+                if (physHeight == displayInfo.logicalHeight) {
+                    displayRectWidth = (displayInfo.logicalWidth * physHeight) / (displayInfo.logicalHeight + displayInfo.signBoardHeight);
+                }
+            } else if (physWidth == displayInfo.logicalWidth) {
+                int mTmpWidth = displayInfo.logicalWidth + displayInfo.signBoardHeight;
+                int i = displayInfo.logicalHeight;
+                displayRectHeight = (displayInfo.logicalHeight * physWidth) / mTmpWidth;
+            }
+            if (orientation == Surface.ROTATION_0) {
+                displayRectTop = displayInfo.signBoardHeight;
+                if (physHeight == displayInfo.logicalHeight) {
+                    displayRectLeft = (physWidth - displayRectWidth) / 2;
+                    displayRectHeight -= displayInfo.signBoardHeight;
+                }
+            } else if (orientation == Surface.ROTATION_180) {
+                displayRectTop = 0;
+                if (physHeight == displayInfo.logicalHeight) {
+                    displayRectLeft = (physWidth - displayRectWidth) / 2;
+                    displayRectHeight -= displayInfo.signBoardHeight;
+                }
+            } else if (orientation == Surface.ROTATION_90) {
+                displayRectLeft = displayInfo.signBoardHeight;
+                if (physWidth == displayInfo.logicalWidth) {
+                    displayRectTop = (physHeight - displayRectHeight) / 2;
+                    displayRectWidth -= displayInfo.signBoardHeight;
+                }
+            } else if (physWidth == displayInfo.logicalWidth) {
+                displayRectTop = (physHeight - displayRectHeight) / 2;
+                displayRectLeft = (physWidth - displayRectWidth) / 2;
+                displayRectWidth -= displayInfo.signBoardHeight;
+            } else {
+                displayRectTop = 0;
+                displayRectLeft = 0;
+            }
+        }
+
         mTempDisplayRect.set(displayRectLeft, displayRectTop,
                 displayRectLeft + displayRectWidth, displayRectTop + displayRectHeight);
 

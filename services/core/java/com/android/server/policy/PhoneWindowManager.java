@@ -94,6 +94,9 @@ import static android.view.WindowManager.LayoutParams.TYPE_PRESENTATION;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIORITY_PHONE;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION;
 import static android.view.WindowManager.LayoutParams.TYPE_QS_DIALOG;
+import static android.view.WindowManager.LayoutParams.FIRST_SIGNBOARD_WINDOW;
+import static android.view.WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
+import static android.view.WindowManager.LayoutParams.LAST_SIGNBOARD_WINDOW;
 import static android.view.WindowManager.LayoutParams.TYPE_SCREENSHOT;
 import static android.view.WindowManager.LayoutParams.TYPE_SEARCH_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_SECURE_SYSTEM_OVERLAY;
@@ -295,6 +298,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static final boolean DEBUG_SPLASH_SCREEN = false;
     static final boolean DEBUG_WAKEUP = false;
     static final boolean SHOW_SPLASH_SCREENS = true;
+    static final int OFFSET = 160;
 
     // Whether to allow dock apps with METADATA_DOCK_HOME to temporarily take over the Home key.
     // No longer recommended for desk docks;
@@ -486,6 +490,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     int[] mNavigationBarWidthForRotationDefault = new int[4];
     int[] mNavigationBarHeightForRotationInCarMode = new int[4];
     int[] mNavigationBarWidthForRotationInCarMode = new int[4];
+
+    WindowState mSignBoard = null;
+    private final Rect[] mSecondScreenFrame = new Rect[4];
 
     private LongSparseArray<IShortcutService> mShortcutKeyServices = new LongSparseArray<>();
 
@@ -2622,6 +2629,15 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell setprop config.override_forced_orient true
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
+
+        mSecondScreenFrame[0] = new Rect();
+        mSecondScreenFrame[1] = new Rect();
+        mSecondScreenFrame[2] = new Rect();
+        mSecondScreenFrame[3] = new Rect();
+        mSecondScreenFrame[0].set(0, -OFFSET, width, 0);
+        mSecondScreenFrame[1].set(-OFFSET, 0, 0, width);
+        mSecondScreenFrame[2].set(0, height - OFFSET, width, height);
+        mSecondScreenFrame[3].set(height - OFFSET, 0, height, width);
     }
 
     /**
@@ -2862,7 +2878,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         if (!((type >= FIRST_APPLICATION_WINDOW && type <= LAST_APPLICATION_WINDOW)
                 || (type >= FIRST_SUB_WINDOW && type <= LAST_SUB_WINDOW)
-                || (type >= FIRST_SYSTEM_WINDOW && type <= LAST_SYSTEM_WINDOW))) {
+                || (type >= FIRST_SYSTEM_WINDOW && type <= LAST_SYSTEM_WINDOW)
+                || (type >= FIRST_SIGNBOARD_WINDOW && type <= LAST_SIGNBOARD_WINDOW))) {
             return WindowManagerGlobal.ADD_INVALID_TYPE;
         }
 
@@ -2888,6 +2905,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 case TYPE_VOICE_INTERACTION:
                 case TYPE_ACCESSIBILITY_OVERLAY:
                 case TYPE_QS_DIALOG:
+                case TYPE_SIGNBOARD_NORMAL:
                     // The window manager will check these.
                     return ADD_OKAY;
             }
@@ -2972,6 +2990,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             case TYPE_DISPLAY_OVERLAY:
             case TYPE_INPUT_CONSUMER:
             case TYPE_KEYGUARD_DIALOG:
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_MAGNIFICATION_OVERLAY:
             case TYPE_NAVIGATION_BAR:
             case TYPE_NAVIGATION_BAR_PANEL:
@@ -3158,7 +3177,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // For a basic navigation bar, when we are in landscape mode we place
             // the navigation bar to the side.
             if (mNavigationBarCanMove && fullWidth > fullHeight) {
-                return fullWidth - getNavigationBarWidth(rotation, uiMode);
+                return fullWidth - getNavigationBarWidth(rotation, uiMode) - OFFSET;
             }
         }
         return fullWidth;
@@ -3180,7 +3199,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // For a basic navigation bar, when we are in portrait mode we place
             // the navigation bar to the bottom.
             if (!mNavigationBarCanMove || fullWidth < fullHeight) {
-                return fullHeight - getNavigationBarHeight(rotation, uiMode);
+                return fullHeight - getNavigationBarHeight(rotation, uiMode) - OFFSET;
             }
         }
         return fullHeight;
@@ -3483,6 +3502,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 mNavigationBarController.setOnBarVisibilityChangedListener(
                         mNavBarVisibilityListener, true);
                 if (DEBUG_LAYOUT) Slog.i(TAG, "NAVIGATION BAR: " + mNavigationBar);
+                break;
+            case TYPE_SIGNBOARD_NORMAL:
+                mSignBoard = win;
                 break;
             case TYPE_NAVIGATION_BAR_PANEL:
             case TYPE_STATUS_BAR_PANEL:
@@ -5914,7 +5936,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 + " sf=" + sf.toShortString()
                 + " osf=" + (osf == null ? "null" : osf.toShortString()));
 
-        win.computeFrameLw(pf, df, of, cf, vf, dcf, sf, osf);
+        if (!layoutWindowLwCustom(win, attached)) win.computeFrameLw(pf, df, of, cf, vf, dcf, sf, osf);
 
         // Dock windows carve out the bottom of the screen, so normal windows
         // can't appear underneath them.
@@ -5927,6 +5949,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 && !win.getGivenInsetsPendingLw()) {
             offsetVoiceInputWindowLw(win);
         }
+    }
+
+    private boolean layoutWindowLwCustom(WindowState win, WindowState attached) {
+        if (win.getAttrs().type == TYPE_SIGNBOARD_NORMAL) {
+            Rect rect = mSecondScreenFrame[mDisplayRotation];
+            Rect overscanForSignBoard = new Rect(0, -OFFSET, 0, 0);
+            win.computeFrameLw(rect, rect, overscanForSignBoard, rect, rect, rect, rect, rect);
+            return true;
+        }
+        return false;
     }
 
     private void layoutWallpaper(WindowState win, Rect pf, Rect df, Rect of, Rect cf) {
