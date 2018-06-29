@@ -378,7 +378,6 @@ final class LogicalDisplay {
                 }
             } else if (physWidth == displayInfo.logicalWidth) {
                 int mTmpWidth = displayInfo.logicalWidth + displayInfo.signBoardHeight;
-                int i = displayInfo.logicalHeight;
                 displayRectHeight = (displayInfo.logicalHeight * physWidth) / mTmpWidth;
             }
             if (orientation == Surface.ROTATION_0) {
