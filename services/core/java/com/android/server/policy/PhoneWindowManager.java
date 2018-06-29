@@ -2630,14 +2630,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
 
-        mSecondScreenFrame[0] = new Rect();
-        mSecondScreenFrame[1] = new Rect();
-        mSecondScreenFrame[2] = new Rect();
-        mSecondScreenFrame[3] = new Rect();
-        mSecondScreenFrame[0].set(0, -OFFSET, width, 0);
-        mSecondScreenFrame[1].set(-OFFSET, 0, 0, width);
-        mSecondScreenFrame[2].set(0, height - OFFSET, width, height);
-        mSecondScreenFrame[3].set(height - OFFSET, 0, height, width);
+        mSecondScreenFrame[0] = new Rect(400, -OFFSET, width, 0);
+        mSecondScreenFrame[1] = new Rect(-OFFSET, 0, 0, 400);
+        mSecondScreenFrame[2] = new Rect(0, height, 1040, height + OFFSET);
+        mSecondScreenFrame[3] = new Rect(width, 440, 0, width + OFFSET);
     }
 
     /**
@@ -3180,7 +3176,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 return fullWidth - getNavigationBarWidth(rotation, uiMode) - OFFSET;
             }
         }
-        return fullWidth;
+        return fullWidth - OFFSET;
     }
 
     private int getNavigationBarHeight(int rotation, int uiMode) {
@@ -3202,7 +3198,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 return fullHeight - getNavigationBarHeight(rotation, uiMode) - OFFSET;
             }
         }
-        return fullHeight;
+        return fullHeight - OFFSET;
     }
 
     @Override
@@ -3236,6 +3232,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         switch (win.getAttrs().type) {
             case TYPE_STATUS_BAR:
             case TYPE_NAVIGATION_BAR:
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_WALLPAPER:
             case TYPE_DREAM:
                 return false;
@@ -5419,6 +5416,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public void layoutWindowLw(WindowState win, WindowState attached) {
         // We've already done the navigation bar and status bar. If the status bar can receive
         // input, we need to layout it again to accomodate for the IME window.
+        android.util.Log.e(TAG, String.valueOf(win.getAttrs().type));
+        
         if ((win == mStatusBar && !canReceiveInput(win)) || win == mNavigationBar) {
             return;
         }
@@ -5925,7 +5924,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
-        if (DEBUG_LAYOUT) Slog.v(TAG, "Compute frame " + attrs.getTitle()
+        if (DEBUG_LAYOUT) Slog.e(TAG, "Compute frame " + attrs.getTitle()
                 + ": sim=#" + Integer.toHexString(sim)
                 + " attach=" + attached + " type=" + attrs.type
                 + String.format(" flags=0x%08x", fl)
@@ -5954,8 +5953,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private boolean layoutWindowLwCustom(WindowState win, WindowState attached) {
         if (win.getAttrs().type == TYPE_SIGNBOARD_NORMAL) {
             Rect rect = mSecondScreenFrame[mDisplayRotation];
-            Rect overscanForSignBoard = new Rect(0, -OFFSET, 0, 0);
-            win.computeFrameLw(rect, rect, overscanForSignBoard, rect, rect, rect, rect, rect);
+            win.computeFrameLw(rect, rect, rect, rect, rect, rect, rect, rect);
             return true;
         }
         return false;
