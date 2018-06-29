@@ -915,6 +915,10 @@ public class SurfaceControl {
         return nativeScreenshot(displayToken, new Rect(), width, height, 0, 0, true,
                 false, Surface.ROTATION_0);
     }
+    
+    public static void screenshot(IBinder display, Surface consumer, Rect sourceCrop) {
+        screenshot(display, consumer, sourceCrop, 0, 0, 0, 0, true, false);
+    }
 
     private static void screenshot(IBinder display, Surface consumer, Rect sourceCrop,
             int width, int height, int minLayer, int maxLayer, boolean allLayers,

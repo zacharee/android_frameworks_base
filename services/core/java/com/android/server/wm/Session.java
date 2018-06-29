@@ -22,6 +22,7 @@ import static android.Manifest.permission.INTERNAL_SYSTEM_WINDOW;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.os.Trace.TRACE_TAG_WINDOW_MANAGER;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+import static android.view.WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
 import static android.view.WindowManager.LayoutParams.isSystemAlertWindowType;
 import static com.android.server.wm.WindowManagerDebugConfig.DEBUG_DRAG;
 import static com.android.server.wm.WindowManagerDebugConfig.DEBUG_TASK_POSITIONING;
@@ -639,7 +640,7 @@ public class Session extends IWindowSession.Stub
             }
         }
 
-        if (type != TYPE_APPLICATION_OVERLAY) {
+        if (type != TYPE_APPLICATION_OVERLAY && type != TYPE_SIGNBOARD_NORMAL) {
             return;
         }
 

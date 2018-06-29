@@ -24,6 +24,8 @@ import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_IS_ROUNDED_CO
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_STARTING;
 import static android.view.WindowManager.LayoutParams.TYPE_INPUT_METHOD;
 import static android.view.WindowManager.LayoutParams.TYPE_WALLPAPER;
+import static android.view.WindowManager.LayoutParams.FIRST_SIGNBOARD_WINDOW;
+import static android.view.WindowManager.LayoutParams.LAST_SIGNBOARD_WINDOW;
 import static com.android.server.wm.AppWindowAnimator.sDummyAnimation;
 import static com.android.server.wm.DragResizeMode.DRAG_RESIZE_MODE_FREEFORM;
 import static com.android.server.wm.WindowManagerDebugConfig.DEBUG_ANIM;
@@ -654,6 +656,11 @@ class WindowStateAnimator {
 
         mTmpSize.set(w.mFrame.left + w.mXOffset, w.mFrame.top + w.mYOffset, 0, 0);
         calculateSurfaceBounds(w, attrs);
+        
+        if (attrs.type >= FIRST_SIGNBOARD_WINDOW && attrs.type <= LAST_SIGNBOARD_WINDOW) {
+            flags |= Integer.MIN_VALUE;
+        }
+        
         final int width = mTmpSize.width();
         final int height = mTmpSize.height();
 

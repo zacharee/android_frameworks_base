@@ -371,7 +371,7 @@ final class LogicalDisplay {
         int displayRectTop = (physHeight - displayRectHeight) / 2;
         int displayRectLeft = (physWidth - displayRectWidth) / 2;
 
-        if (displayInfo.signBoardHeight > 0 && (displayDeviceInfo.flags & Display.FLAG_SUPPORTS_PROTECTED_BUFFERS) != 0) {
+        if (displayInfo.signBoardHeight > 0) {
             if (orientation == Surface.ROTATION_0 || orientation == Surface.ROTATION_180) {
                 if (physHeight == displayInfo.logicalHeight) {
                     displayRectWidth = (displayInfo.logicalWidth * physHeight) / (displayInfo.logicalHeight + displayInfo.signBoardHeight);

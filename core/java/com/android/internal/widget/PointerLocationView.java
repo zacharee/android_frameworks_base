@@ -26,12 +26,14 @@ import android.hardware.input.InputManager.InputDeviceListener;
 import android.os.SystemProperties;
 import android.util.Log;
 import android.util.Slog;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.WindowManager;
 import android.view.WindowManagerPolicy.PointerEventListener;
 import android.view.MotionEvent.PointerCoords;
 
@@ -107,6 +109,7 @@ public class PointerLocationView extends View implements InputDeviceListener,
     private final int ESTIMATE_PAST_POINTS = 4;
     private final int ESTIMATE_FUTURE_POINTS = 2;
     private final float ESTIMATE_INTERVAL = 0.02f;
+    private final int mSignBoardHeight = 160;
 
     private final InputManager mIm;
 
@@ -221,10 +224,23 @@ public class PointerLocationView extends View implements InputDeviceListener,
 
     @Override
     protected void onDraw(Canvas canvas) {
+        int offsetY = mSignBoardHeight;
+        int offsetX = 0;
+        
+        Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        
+        if (display.getRotation() != 0) {
+            offsetY = 0;
+            if (display.getRotation() == 1) {
+                offsetX = mSignBoardHeight;
+            }
+        }
+    
         final int w = getWidth();
         final int itemW = w/7;
-        final int base = -mTextMetrics.ascent+1;
-        final int bottom = mHeaderBottom;
+        final int base = -mTextMetrics.ascent+1 + offsetY;
+        int top = offsetY;
+        final int bottom = mHeaderBottom + offsetY;
 
         final int NP = mPointers.size();
 
@@ -232,7 +248,7 @@ public class PointerLocationView extends View implements InputDeviceListener,
         if (mActivePointerId >= 0) {
             final PointerState ps = mPointers.get(mActivePointerId);
             
-            canvas.drawRect(0, 0, itemW-1, bottom,mTextBackgroundPaint);
+            canvas.drawRect(0, top, itemW-1, bottom,mTextBackgroundPaint);
             canvas.drawText(mText.clear()
                     .append("P: ").append(mCurNumPointers)
                     .append(" / ").append(mMaxNumPointers)
@@ -240,24 +256,24 @@ public class PointerLocationView extends View implements InputDeviceListener,
 
             final int N = ps.mTraceCount;
             if ((mCurDown && ps.mCurDown) || N == 0) {
-                canvas.drawRect(itemW, 0, (itemW * 2) - 1, bottom, mTextBackgroundPaint);
+                canvas.drawRect(itemW, top, (itemW * 2) - 1, bottom, mTextBackgroundPaint);
                 canvas.drawText(mText.clear()
                         .append("X: ").append(ps.mCoords.x, 1)
                         .toString(), 1 + itemW, base, mTextPaint);
-                canvas.drawRect(itemW * 2, 0, (itemW * 3) - 1, bottom, mTextBackgroundPaint);
+                canvas.drawRect(itemW * 2, top, (itemW * 3) - 1, bottom, mTextBackgroundPaint);
                 canvas.drawText(mText.clear()
                         .append("Y: ").append(ps.mCoords.y, 1)
                         .toString(), 1 + itemW * 2, base, mTextPaint);
             } else {
                 float dx = ps.mTraceX[N - 1] - ps.mTraceX[0];
                 float dy = ps.mTraceY[N - 1] - ps.mTraceY[0];
-                canvas.drawRect(itemW, 0, (itemW * 2) - 1, bottom,
+                canvas.drawRect(itemW, top, (itemW * 2) - 1, bottom,
                         Math.abs(dx) < mVC.getScaledTouchSlop()
                         ? mTextBackgroundPaint : mTextLevelPaint);
                 canvas.drawText(mText.clear()
                         .append("dX: ").append(dx, 1)
                         .toString(), 1 + itemW, base, mTextPaint);
-                canvas.drawRect(itemW * 2, 0, (itemW * 3) - 1, bottom,
+                canvas.drawRect(itemW * 2, top, (itemW * 3) - 1, bottom,
                         Math.abs(dy) < mVC.getScaledTouchSlop()
                         ? mTextBackgroundPaint : mTextLevelPaint);
                 canvas.drawText(mText.clear()
@@ -265,25 +281,25 @@ public class PointerLocationView extends View implements InputDeviceListener,
                         .toString(), 1 + itemW * 2, base, mTextPaint);
             }
 
-            canvas.drawRect(itemW * 3, 0, (itemW * 4) - 1, bottom, mTextBackgroundPaint);
+            canvas.drawRect(itemW * 3, top, (itemW * 4) - 1, bottom, mTextBackgroundPaint);
             canvas.drawText(mText.clear()
                     .append("Xv: ").append(ps.mXVelocity, 3)
                     .toString(), 1 + itemW * 3, base, mTextPaint);
 
-            canvas.drawRect(itemW * 4, 0, (itemW * 5) - 1, bottom, mTextBackgroundPaint);
+            canvas.drawRect(itemW * 4, top, (itemW * 5) - 1, bottom, mTextBackgroundPaint);
             canvas.drawText(mText.clear()
                     .append("Yv: ").append(ps.mYVelocity, 3)
                     .toString(), 1 + itemW * 4, base, mTextPaint);
 
-            canvas.drawRect(itemW * 5, 0, (itemW * 6) - 1, bottom, mTextBackgroundPaint);
-            canvas.drawRect(itemW * 5, 0, (itemW * 5) + (ps.mCoords.pressure * itemW) - 1,
+            canvas.drawRect(itemW * 5, top, (itemW * 6) - 1, bottom, mTextBackgroundPaint);
+            canvas.drawRect(itemW * 5, top, (itemW * 5) + (ps.mCoords.pressure * itemW) - 1,
                     bottom, mTextLevelPaint);
             canvas.drawText(mText.clear()
                     .append("Prs: ").append(ps.mCoords.pressure, 2)
                     .toString(), 1 + itemW * 5, base, mTextPaint);
 
-            canvas.drawRect(itemW * 6, 0, w, bottom, mTextBackgroundPaint);
-            canvas.drawRect(itemW * 6, 0, (itemW * 6) + (ps.mCoords.size * itemW) - 1,
+            canvas.drawRect(itemW * 6, top, w, bottom, mTextBackgroundPaint);
+            canvas.drawRect(itemW * 6, top, (itemW * 6) + (ps.mCoords.size * itemW) - 1,
                     bottom, mTextLevelPaint);
             canvas.drawText(mText.clear()
                     .append("Size: ").append(ps.mCoords.size, 2)
@@ -301,8 +317,8 @@ public class PointerLocationView extends View implements InputDeviceListener,
             boolean drawn = false;
             mPaint.setARGB(255, 128, 255, 255);
             for (int i=0; i < N; i++) {
-                float x = ps.mTraceX[i];
-                float y = ps.mTraceY[i];
+                float x = ps.mTraceX[i] + ((float) offsetX);
+                float y = ps.mTraceY[i] + ((float) offsetY);
                 if (Float.isNaN(x)) {
                     haveLast = false;
                     continue;
@@ -321,11 +337,11 @@ public class PointerLocationView extends View implements InputDeviceListener,
             if (drawn) {
                 // Draw movement estimate curve.
                 mPaint.setARGB(128, 128, 0, 128);
-                float lx = ps.mEstimator.estimateX(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL);
-                float ly = ps.mEstimator.estimateY(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL);
+                float lx = ps.mEstimator.estimateX(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL) + ((float) offsetX);
+                float ly = ps.mEstimator.estimateY(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL) + ((float) offsetY);
                 for (int i = -ESTIMATE_PAST_POINTS + 1; i <= ESTIMATE_FUTURE_POINTS; i++) {
-                    float x = ps.mEstimator.estimateX(i * ESTIMATE_INTERVAL);
-                    float y = ps.mEstimator.estimateY(i * ESTIMATE_INTERVAL);
+                    float x = ps.mEstimator.estimateX(i * ESTIMATE_INTERVAL) + ((float) offsetX);
+                    float y = ps.mEstimator.estimateY(i * ESTIMATE_INTERVAL) + ((float) offsetY);
                     canvas.drawLine(lx, ly, x, y, mPaint);
                     lx = x;
                     ly = y;
@@ -340,11 +356,11 @@ public class PointerLocationView extends View implements InputDeviceListener,
                 // Draw alternate estimate.
                 if (mAltVelocity != null) {
                     mPaint.setARGB(128, 0, 128, 128);
-                    lx = ps.mAltEstimator.estimateX(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL);
-                    ly = ps.mAltEstimator.estimateY(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL);
+                    lx = ps.mAltEstimator.estimateX(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL) + ((float) offsetX);
+                    ly = ps.mAltEstimator.estimateY(-ESTIMATE_PAST_POINTS * ESTIMATE_INTERVAL) + ((float) offsetY);
                     for (int i = -ESTIMATE_PAST_POINTS + 1; i <= ESTIMATE_FUTURE_POINTS; i++) {
-                        float x = ps.mAltEstimator.estimateX(i * ESTIMATE_INTERVAL);
-                        float y = ps.mAltEstimator.estimateY(i * ESTIMATE_INTERVAL);
+                        float x = ps.mAltEstimator.estimateX(i * ESTIMATE_INTERVAL) + ((float) offsetX);
+                        float y = ps.mAltEstimator.estimateY(i * ESTIMATE_INTERVAL) + ((float) offsetY);
                         canvas.drawLine(lx, ly, x, y, mPaint);
                         lx = x;
                         ly = y;
@@ -359,22 +375,22 @@ public class PointerLocationView extends View implements InputDeviceListener,
 
             if (mCurDown && ps.mCurDown) {
                 // Draw crosshairs.
-                canvas.drawLine(0, ps.mCoords.y, getWidth(), ps.mCoords.y, mTargetPaint);
-                canvas.drawLine(ps.mCoords.x, 0, ps.mCoords.x, getHeight(), mTargetPaint);
+                canvas.drawLine(0, ps.mCoords.y + ((float) offsetY), getWidth(), ps.mCoords.y + ((float) offsetY), mTargetPaint);
+                canvas.drawLine(ps.mCoords.x + ((float) offsetX), 0, ps.mCoords.x + ((float) offsetX), getHeight(), mTargetPaint);
 
                 // Draw current point.
                 int pressureLevel = (int)(ps.mCoords.pressure * 255);
                 mPaint.setARGB(255, pressureLevel, 255, 255 - pressureLevel);
-                canvas.drawPoint(ps.mCoords.x, ps.mCoords.y, mPaint);
+                canvas.drawPoint(ps.mCoords.x + ((float) offsetX), ps.mCoords.y + ((float) offsetY), mPaint);
 
                 // Draw current touch ellipse.
                 mPaint.setARGB(255, pressureLevel, 255 - pressureLevel, 128);
-                drawOval(canvas, ps.mCoords.x, ps.mCoords.y, ps.mCoords.touchMajor,
+                drawOval(canvas, ps.mCoords.x + ((float) offsetX), ps.mCoords.y + ((float) offsetY), ps.mCoords.touchMajor,
                         ps.mCoords.touchMinor, ps.mCoords.orientation, mPaint);
 
                 // Draw current tool ellipse.
                 mPaint.setARGB(255, pressureLevel, 128, 255 - pressureLevel);
-                drawOval(canvas, ps.mCoords.x, ps.mCoords.y, ps.mCoords.toolMajor,
+                drawOval(canvas, ps.mCoords.x + ((float) offsetX), ps.mCoords.y + ((float) offsetY), ps.mCoords.toolMajor,
                         ps.mCoords.toolMinor, ps.mCoords.orientation, mPaint);
 
                 // Draw the orientation arrow.
@@ -390,17 +406,17 @@ public class PointerLocationView extends View implements InputDeviceListener,
                 if (ps.mToolType == MotionEvent.TOOL_TYPE_STYLUS
                         || ps.mToolType == MotionEvent.TOOL_TYPE_ERASER) {
                     // Show full circle orientation.
-                    canvas.drawLine(ps.mCoords.x, ps.mCoords.y,
-                            ps.mCoords.x + orientationVectorX,
-                            ps.mCoords.y + orientationVectorY,
+                    canvas.drawLine(ps.mCoords.x + ((float) offsetX), ps.mCoords.y + ((float) offsetY),
+                            ps.mCoords.x + orientationVectorX + ((float) offsetX),
+                            ps.mCoords.y + orientationVectorY + ((float) offsetY),
                             mPaint);
                 } else {
                     // Show half circle orientation.
                     canvas.drawLine(
-                            ps.mCoords.x - orientationVectorX,
-                            ps.mCoords.y - orientationVectorY,
-                            ps.mCoords.x + orientationVectorX,
-                            ps.mCoords.y + orientationVectorY,
+                            ps.mCoords.x - orientationVectorX + ((float) offsetX),
+                            ps.mCoords.y - orientationVectorY + ((float) offsetY),
+                            ps.mCoords.x + orientationVectorX + ((float) offsetX),
+                            ps.mCoords.y + orientationVectorY + ((float) offsetY),
                             mPaint);
                 }
 
@@ -408,8 +424,8 @@ public class PointerLocationView extends View implements InputDeviceListener,
                 float tiltScale = (float) Math.sin(
                         ps.mCoords.getAxisValue(MotionEvent.AXIS_TILT));
                 canvas.drawCircle(
-                        ps.mCoords.x + orientationVectorX * tiltScale,
-                        ps.mCoords.y + orientationVectorY * tiltScale,
+                        ps.mCoords.x + ((float) offsetX) + orientationVectorX * tiltScale,
+                        ps.mCoords.y + ((float) offsetY) + orientationVectorY * tiltScale,
                         3.0f, mPaint);
 
                 // Draw the current bounding box
