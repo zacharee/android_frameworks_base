@@ -803,6 +803,7 @@ public interface WindowManagerPolicy {
         }
 
         switch (type) {
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_WALLPAPER:
                 // wallpaper is at the bottom, though the window manager may move it.
                 return  1;
@@ -891,7 +892,6 @@ public interface WindowManagerPolicy {
                 return  31;
             case TYPE_BOOT_PROGRESS:
                 return  32;
-            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_POINTER:
                 // the (mouse) pointer layer
                 return  33;
