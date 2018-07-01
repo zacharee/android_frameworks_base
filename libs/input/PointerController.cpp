@@ -152,30 +152,15 @@ bool PointerController::getBoundsLocked(float* outMinX, float* outMinY,
         return false;
     }
 
-    int signBoardHeight = 160;
-
+    *outMinX = 0;
+    *outMinY = 0;
     switch (mLocked.displayOrientation) {
-    case DISPLAY_ORIENTATION_270:
-        *outMinX = signBoardHeight - 1;
-        *outMinY = 0;
-        *outMaxX = mLocked.displayWidth + signBoardHeight - 1;
-        *outMaxY = mLocked.displayHeight - 1;
-        break;
     case DISPLAY_ORIENTATION_90:
-        *outMinX = 0;
-        *outMinY = 0;
+    case DISPLAY_ORIENTATION_270:
         *outMaxX = mLocked.displayHeight - 1;
         *outMaxY = mLocked.displayWidth - 1;
         break;
-    case DISPLAY_ORIENTATION_180:
-        *outMinX = 0;
-        *outMinY = signBoardHeight - 1;
-        *outMaxY = mLocked.displayHeight + signBoardHeight - 1;
-        *outMaxX = mLocked.displayWidth -1;
-        break;
     default:
-        *outMinX = 0;
-        *outMinY = 0;
         *outMaxX = mLocked.displayWidth - 1;
         *outMaxY = mLocked.displayHeight - 1;
         break;
