@@ -18,6 +18,8 @@ package android.hardware.display;
 
 import android.graphics.Rect;
 import android.text.TextUtils;
+import android.view.Surface;
+import android.view.Display;
 
 /**
  * Describes how the pixels of physical display device reflects the content of
@@ -62,9 +64,23 @@ public final class DisplayViewport {
         orientation = viewport.orientation;
         logicalFrame.set(viewport.logicalFrame);
         physicalFrame.set(viewport.physicalFrame);
+
+        uniqueId = viewport.uniqueId;
+        
+        int signBoardHeight = 160;
+        
+        if (displayId == Display.DEFAULT_DISPLAY) {
+            if (orientation == Surface.ROTATION_0) {
+                physicalFrame.top += signBoardHeight;
+                physicalFrame.bottom += signBoardHeight;
+            } else if (orientation == Surface.ROTATION_90) {
+                physicalFrame.left += signBoardHeight;
+                physicalFrame.right += signBoardHeight;
+            }
+        }
+
         deviceWidth = viewport.deviceWidth;
         deviceHeight = viewport.deviceHeight;
-        uniqueId = viewport.uniqueId;
     }
 
     /**
