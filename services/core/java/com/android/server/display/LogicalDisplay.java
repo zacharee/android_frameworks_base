@@ -382,10 +382,12 @@ final class LogicalDisplay {
                 mTempLayerStackRect.set(-displayInfo.signBoardHeight, 0, displayInfo.logicalWidth, displayInfo.logicalHeight);
             } else if (orientation == Surface.ROTATION_180) {
                 displayRectTop = 0;
-                mTempLayerStackRect.set(0, 0, displayInfo.logicalWidth, displayInfo.logicalHeight);
+                displayRectHeight += displayInfo.signBoardHeight;
+                mTempLayerStackRect.set(0, 0, displayInfo.logicalWidth, displayInfo.logicalHeight + displayInfo.signBoardHeight);
             } else if (orientation == Surface.ROTATION_270) {
                 displayRectLeft = 0;
-                mTempLayerStackRect.set(0, 0, displayInfo.logicalWidth, displayInfo.logicalHeight);
+                displayRectWidth += displayInfo.signBoardHeight;
+                mTempLayerStackRect.set(0, 0, displayInfo.logicalWidth + displayInfo.signBoardHeight, displayInfo.logicalHeight);
             }
         }
 
