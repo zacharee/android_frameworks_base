@@ -2630,10 +2630,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
 
-        mSecondScreenFrame[0] = new Rect(400, -OFFSET, width, 0);
-        mSecondScreenFrame[1] = new Rect(-OFFSET, 0, 0, 400);
-        mSecondScreenFrame[2] = new Rect(0, height, 1040, height + OFFSET);
-        mSecondScreenFrame[3] = new Rect(width, 440, 0, width + OFFSET);
+        mSecondScreenFrame[Surface.ROTATION_0] = new Rect(0, -OFFSET, width, 0);
+        mSecondScreenFrame[Surface.ROTATION_90] = new Rect(-OFFSET, 0, 0, width);
+        mSecondScreenFrame[Surface.ROTATION_180] = new Rect(0, height - OFFSET, width, height);
+        mSecondScreenFrame[Surface.ROTATION_270] = new Rect(height - OFFSET, 0, height, width);
     }
 
     /**
