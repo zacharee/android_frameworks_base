@@ -492,7 +492,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     int[] mNavigationBarWidthForRotationInCarMode = new int[4];
 
     WindowState mSignBoard = null;
-    private final Rect[] mSecondScreenFrame = new Rect[4];
+    private final Rect[] mSignBoardFrame = new Rect[4];
 
     private LongSparseArray<IShortcutService> mShortcutKeyServices = new LongSparseArray<>();
 
@@ -2630,10 +2630,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
 
-        mSecondScreenFrame[Surface.ROTATION_0] = new Rect(0, -OFFSET, width, 0);
-        mSecondScreenFrame[Surface.ROTATION_90] = new Rect(-OFFSET, 0, 0, width);
-        mSecondScreenFrame[Surface.ROTATION_180] = new Rect(0, height - OFFSET, width, height);
-        mSecondScreenFrame[Surface.ROTATION_270] = new Rect(height - OFFSET, 0, height, width);
+        mSignBoardFrame[Surface.ROTATION_0] = new Rect(0, -OFFSET, width - 400, 0);
+        mSignBoardFrame[Surface.ROTATION_90] = new Rect(-OFFSET, 0, 0, width);
+        mSignBoardFrame[Surface.ROTATION_180] = new Rect(400, height - OFFSET, width, height);
+        mSignBoardFrame[Surface.ROTATION_270] = new Rect(height - OFFSET, 0, height, width);
     }
 
     /**
@@ -5952,7 +5952,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     private boolean layoutWindowLwCustom(WindowState win, WindowState attached) {
         if (win.getAttrs().type == TYPE_SIGNBOARD_NORMAL) {
-            Rect rect = mSecondScreenFrame[mDisplayRotation];
+            Rect rect = mSignBoardFrame[mDisplayRotation];
             win.computeFrameLw(rect, rect, rect, rect, rect, rect, rect, rect);
             return true;
         }
