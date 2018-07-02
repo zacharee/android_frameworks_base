@@ -2630,10 +2630,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
 
-        mSignBoardFrame[Surface.ROTATION_0] = new Rect(0, -OFFSET, width - 400, 0);
-        mSignBoardFrame[Surface.ROTATION_90] = new Rect(-OFFSET, 0, 0, width);
-        mSignBoardFrame[Surface.ROTATION_180] = new Rect(400, height - OFFSET, width, height);
-        mSignBoardFrame[Surface.ROTATION_270] = new Rect(height - OFFSET, 0, height, width);
+        mSignBoardFrame[Surface.ROTATION_0] = new Rect(400, -OFFSET, width, 0);
+        mSignBoardFrame[Surface.ROTATION_90] = new Rect(-OFFSET, -OFFSET, 0, width - 400);
+        mSignBoardFrame[Surface.ROTATION_180] = new Rect(0, height - OFFSET, width - 400, height);
+        mSignBoardFrame[Surface.ROTATION_270] = new Rect(height - OFFSET, 400, height, width);
     }
 
     /**
@@ -5416,7 +5416,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public void layoutWindowLw(WindowState win, WindowState attached) {
         // We've already done the navigation bar and status bar. If the status bar can receive
         // input, we need to layout it again to accomodate for the IME window.
-        android.util.Log.e(TAG, String.valueOf(win.getAttrs().type));
         
         if ((win == mStatusBar && !canReceiveInput(win)) || win == mNavigationBar) {
             return;
@@ -5935,7 +5934,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 + " sf=" + sf.toShortString()
                 + " osf=" + (osf == null ? "null" : osf.toShortString()));
 
-        if (!layoutWindowLwCustom(win, attached)) win.computeFrameLw(pf, df, of, cf, vf, dcf, sf, osf);
+        if (!layoutWindowLwCustom(win)) win.computeFrameLw(pf, df, of, cf, vf, dcf, sf, osf);
 
         // Dock windows carve out the bottom of the screen, so normal windows
         // can't appear underneath them.
@@ -5950,7 +5949,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
     }
 
-    private boolean layoutWindowLwCustom(WindowState win, WindowState attached) {
+    private boolean layoutWindowLwCustom(WindowState win) {
         if (win.getAttrs().type == TYPE_SIGNBOARD_NORMAL) {
             Rect rect = mSignBoardFrame[mDisplayRotation];
             win.computeFrameLw(rect, rect, rect, rect, rect, rect, rect, rect);
