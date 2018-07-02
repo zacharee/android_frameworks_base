@@ -241,6 +241,7 @@ public interface WindowManager extends ViewManager {
          * @see #TYPE_INPUT_METHOD
          * @see #TYPE_INPUT_METHOD_DIALOG
          * @see #TYPE_KEYGUARD_PANEL
+         * @see #TYPE_SIGNBOARD_NORMAL
          */
         @ViewDebug.ExportedProperty(mapping = {
             @ViewDebug.IntToString(from = TYPE_BASE_APPLICATION, to = "TYPE_BASE_APPLICATION"),
@@ -286,6 +287,7 @@ public interface WindowManager extends ViewManager {
             @ViewDebug.IntToString(from = TYPE_QS_DIALOG, to = "TYPE_QS_DIALOG"),
             @ViewDebug.IntToString(from = TYPE_SCREENSHOT, to = "TYPE_SCREENSHOT"),
             @ViewDebug.IntToString(from = TYPE_KEYGUARD_PANEL, to = "TYPE_KEYGUARD_PANEL"),
+            @ViewDebug.IntToString(from = TYPE_SIGNBOARD_NORMAL, to = "TYPE_SIGNBOARD_NORMAL")
         })
         public int type;
 

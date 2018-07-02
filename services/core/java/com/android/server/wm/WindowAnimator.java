@@ -275,6 +275,11 @@ public class WindowAnimator {
         allowWhenLocked |= (win.mAttrs.flags & FLAG_DISMISS_KEYGUARD) != 0
                 && mPolicy.canShowDismissingWindowWhileLockedLw();
 
+        if (win.getAttrs().type >= WindowManager.LayoutParams.FIRST_SIGNBOARD_WINDOW
+                && win.getAttrs().type <= WindowManager.LayoutParams.LAST_SIGNBOARD_WINDOW) {
+            allowWhenLocked = true;
+        }
+
         // Only hide windows if the keyguard is active and not animating away.
         boolean keyguardOn = mPolicy.isKeyguardShowingOrOccluded()
                 && mForceHiding != KEYGUARD_ANIMATING_OUT;
@@ -415,6 +420,11 @@ public class WindowAnimator {
                                 && win.mAttachedWindow == null
                                 && !win.mIsImWindow
                                 && displayId == Display.DEFAULT_DISPLAY;
+
+                        if (win.getAttrs().type >= WindowManager.LayoutParams.FIRST_SIGNBOARD_WINDOW
+                                && win.getAttrs().type <= WindowManager.LayoutParams.LAST_SIGNBOARD_WINDOW) {
+                            applyExistingExitAnimation = false;
+                        }
 
                         // If the window is already showing and we don't need to apply an existing
                         // Keyguard exit animation, skip.

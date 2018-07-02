@@ -2416,7 +2416,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
 
         // For demo purposes, allow the rotation of the HDMI display to be controlled.
-        // By default, HDMI locks rotation to landscape.
+        // By default, HDMI locks rotation services/core/java/com/android/server/policy/PhoneWindowManager.javato landscape.
         if ("portrait".equals(SystemProperties.get("persist.demo.hdmirotation"))) {
             mDemoHdmiRotation = mPortraitRotation;
         } else {
@@ -2443,14 +2443,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
 
-        mSecondScreenFrame[0] = new Rect();
-        mSecondScreenFrame[1] = new Rect();
-        mSecondScreenFrame[2] = new Rect();
-        mSecondScreenFrame[3] = new Rect();
-        mSecondScreenFrame[0].set(0, -OFFSET, width, 0);
-        mSecondScreenFrame[1].set(-OFFSET, 0, 0, width);
-        mSecondScreenFrame[2].set(0, height - OFFSET, width, height);
-        mSecondScreenFrame[3].set(height - OFFSET, 0, height, width);
+        mSecondScreenFrame[Surface.ROTATION_0] = new Rect(0, -OFFSET, width, 0);
+        mSecondScreenFrame[Surface.ROTATION_90] = new Rect(-OFFSET, 0, 0, width);
+        mSecondScreenFrame[Surface.ROTATION_180] = new Rect(0, height - OFFSET, width, height);
+        mSecondScreenFrame[Surface.ROTATION_270] = new Rect(height - OFFSET, 0, height, width);
     }
 
     /**
@@ -2692,7 +2688,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             return WindowManagerGlobal.ADD_INVALID_TYPE;
         }
 
-        if (type < FIRST_SYSTEM_WINDOW || type > LAST_SYSTEM_WINDOW) {
+        if (type < FIRST_SYSTEM_WINDOW || type > LAST_SIGNBOARD_WINDOW) {
             // Window manager will make sure these are okay.
             return WindowManagerGlobal.ADD_OKAY;
         }
@@ -2820,6 +2816,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             case TYPE_PRIVATE_PRESENTATION:
             case TYPE_DOCK_DIVIDER:
             case TYPE_KEYGUARD_PANEL:
+            case TYPE_SIGNBOARD_NORMAL:
                 break;
         }
 
@@ -2985,99 +2982,100 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             return 2;
         }
         switch (type) {
-        case TYPE_PRIVATE_PRESENTATION:
-            return 2;
-        case TYPE_WALLPAPER:
-            // wallpaper is at the bottom, though the window manager may move it.
-            return 2;
-        case TYPE_DOCK_DIVIDER:
-            return 2;
-        case TYPE_QS_DIALOG:
-            return 2;
-        case TYPE_PHONE:
-            return 3;
-        case TYPE_SEARCH_BAR:
-        case TYPE_VOICE_INTERACTION_STARTING:
-            return 4;
-        case TYPE_VOICE_INTERACTION:
-            // voice interaction layer is almost immediately above apps.
-            return 5;
-        case TYPE_INPUT_CONSUMER:
-            return 6;
-        case TYPE_SYSTEM_DIALOG:
-            return 7;
-        case TYPE_TOAST:
-            // toasts and the plugged-in battery thing
-            return 8;
-        case TYPE_PRIORITY_PHONE:
-            // SIM errors and unlock.  Not sure if this really should be in a high layer.
-            return 9;
-        case TYPE_DREAM:
-            // used for Dreams (screensavers with TYPE_DREAM windows)
-            return 10;
-        case TYPE_SYSTEM_ALERT:
-            // like the ANR / app crashed dialogs
-            return 11;
-        case TYPE_INPUT_METHOD:
-            // on-screen keyboards and other such input method user interfaces go here.
-            return 12;
-        case TYPE_INPUT_METHOD_DIALOG:
-            // on-screen keyboards and other such input method user interfaces go here.
-            return 13;
-        case TYPE_KEYGUARD_SCRIM:
-            // the safety window that shows behind keyguard while keyguard is starting
-            return 14;
-        case TYPE_STATUS_BAR_SUB_PANEL:
-        case TYPE_KEYGUARD_PANEL:
-            return 15;
-        case TYPE_STATUS_BAR:
-            return 16;
-        case TYPE_STATUS_BAR_PANEL:
-            return 17;
-        case TYPE_KEYGUARD_DIALOG:
-            return 18;
-        case TYPE_VOLUME_OVERLAY:
-            // the on-screen volume indicator and controller shown when the user
-            // changes the device volume
-            return 19;
-        case TYPE_SYSTEM_OVERLAY:
-            // the on-screen volume indicator and controller shown when the user
-            // changes the device volume
-            return 20;
-        case TYPE_NAVIGATION_BAR:
-            // the navigation bar, if available, shows atop most things
-            return 21;
-        case TYPE_NAVIGATION_BAR_PANEL:
-            // some panels (e.g. search) need to show on top of the navigation bar
-            return 22;
-        case TYPE_SCREENSHOT:
-            // screenshot selection layer shouldn't go above system error, but it should cover
-            // navigation bars at the very least.
-            return 23;
-        case TYPE_SYSTEM_ERROR:
-            // system-level error dialogs
-            return 24;
-        case TYPE_SIGNBOARD_NORMAL:
-        case TYPE_MAGNIFICATION_OVERLAY:
-            // used to highlight the magnified portion of a display
-            return 25;
-        case TYPE_DISPLAY_OVERLAY:
-            // used to simulate secondary display devices
-            return 26;
-        case TYPE_DRAG:
-            // the drag layer: input for drag-and-drop is associated with this window,
-            // which sits above all other focusable windows
-            return 27;
-        case TYPE_ACCESSIBILITY_OVERLAY:
-            // overlay put by accessibility services to intercept user interaction
-            return 28;
-        case TYPE_SECURE_SYSTEM_OVERLAY:
-            return 29;
-        case TYPE_BOOT_PROGRESS:
-            return 30;
-        case TYPE_POINTER:
-            // the (mouse) pointer layer
-            return 31;
+            case TYPE_SIGNBOARD_NORMAL:
+                return 11;
+            case TYPE_PRIVATE_PRESENTATION:
+                return 2;
+            case TYPE_WALLPAPER:
+                // wallpaper is at the bottom, though the window manager may move it.
+                return 2;
+            case TYPE_DOCK_DIVIDER:
+                return 2;
+            case TYPE_QS_DIALOG:
+                return 2;
+            case TYPE_PHONE:
+                return 3;
+            case TYPE_SEARCH_BAR:
+            case TYPE_VOICE_INTERACTION_STARTING:
+                return 4;
+            case TYPE_VOICE_INTERACTION:
+                // voice interaction layer is almost immediately above apps.
+                return 5;
+            case TYPE_INPUT_CONSUMER:
+                return 6;
+            case TYPE_SYSTEM_DIALOG:
+                return 7;
+            case TYPE_TOAST:
+                // toasts and the plugged-in battery thing
+                return 8;
+            case TYPE_PRIORITY_PHONE:
+                // SIM errors and unlock.  Not sure if this really should be in a high layer.
+                return 9;
+            case TYPE_DREAM:
+                // used for Dreams (screensavers with TYPE_DREAM windows)
+                return 10;
+            case TYPE_SYSTEM_ALERT:
+                // like the ANR / app crashed dialogs
+                return 11;
+            case TYPE_INPUT_METHOD:
+                // on-screen keyboards and other such input method user interfaces go here.
+                return 12;
+            case TYPE_INPUT_METHOD_DIALOG:
+                // on-screen keyboards and other such input method user interfaces go here.
+                return 13;
+            case TYPE_KEYGUARD_SCRIM:
+                // the safety window that shows behind keyguard while keyguard is starting
+                return 14;
+            case TYPE_STATUS_BAR_SUB_PANEL:
+            case TYPE_KEYGUARD_PANEL:
+                return 15;
+            case TYPE_STATUS_BAR:
+                return 16;
+            case TYPE_STATUS_BAR_PANEL:
+                return 17;
+            case TYPE_KEYGUARD_DIALOG:
+                return 18;
+            case TYPE_VOLUME_OVERLAY:
+                // the on-screen volume indicator and controller shown when the user
+                // changes the device volume
+                return 19;
+            case TYPE_SYSTEM_OVERLAY:
+                // the on-screen volume indicator and controller shown when the user
+                // changes the device volume
+                return 20;
+            case TYPE_NAVIGATION_BAR:
+                // the navigation bar, if available, shows atop most things
+                return 21;
+            case TYPE_NAVIGATION_BAR_PANEL:
+                // some panels (e.g. search) need to show on top of the navigation bar
+                return 22;
+            case TYPE_SCREENSHOT:
+                // screenshot selection layer shouldn't go above system error, but it should cover
+                // navigation bars at the very least.
+                return 23;
+            case TYPE_SYSTEM_ERROR:
+                // system-level error dialogs
+                return 24;
+            case TYPE_MAGNIFICATION_OVERLAY:
+                // used to highlight the magnified portion of a display
+                return 25;
+            case TYPE_DISPLAY_OVERLAY:
+                // used to simulate secondary display devices
+                return 26;
+            case TYPE_DRAG:
+                // the drag layer: input for drag-and-drop is associated with this window,
+                // which sits above all other focusable windows
+                return 27;
+            case TYPE_ACCESSIBILITY_OVERLAY:
+                // overlay put by accessibility services to intercept user interaction
+                return 28;
+            case TYPE_SECURE_SYSTEM_OVERLAY:
+                return 29;
+            case TYPE_BOOT_PROGRESS:
+                return 30;
+            case TYPE_POINTER:
+                // the (mouse) pointer layer
+                return 31;
         }
         Log.e(TAG, "Unknown window type: " + type);
         return 2;
@@ -3186,6 +3184,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             case TYPE_WALLPAPER:
             case TYPE_DREAM:
             case TYPE_KEYGUARD_SCRIM:
+            case TYPE_SIGNBOARD_NORMAL:
                 return false;
             default:
                 // Hide only windows below the keyguard host window.
