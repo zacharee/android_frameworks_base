@@ -104,6 +104,7 @@ import com.android.server.broadcastradio.BroadcastRadioService;
 import com.android.server.restrictions.RestrictionsManagerService;
 import com.android.server.security.KeyAttestationApplicationIdProviderService;
 import com.android.server.security.KeyChainSystemService;
+import com.android.server.SignBoardService;
 import com.android.server.soundtrigger.SoundTriggerService;
 import com.android.server.statusbar.StatusBarManagerService;
 import com.android.server.storage.DeviceStorageMonitorService;
@@ -1903,6 +1904,13 @@ public final class SystemServer {
             }
             traceEnd();
         }, BOOT_TIMINGS_TRACE_LOG);
+
+        try {
+            ServiceManager.addService("signboardservice", new SignBoardService(context));
+        }
+        catch (Throwable e) {
+            Slog.e(TAG, "Failed to add SignBoard Service", e);
+        }
     }
 
     static final void startSystemUi(Context context, WindowManagerService windowManager) {
