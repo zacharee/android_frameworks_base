@@ -34,6 +34,7 @@ services := \
     net \
     print \
     restrictions \
+    signboard \
     usage \
     usb \
     voiceinteraction
