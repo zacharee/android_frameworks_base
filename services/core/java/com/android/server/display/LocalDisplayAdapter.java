@@ -143,7 +143,6 @@ final class LocalDisplayAdapter extends DisplayAdapter {
     static int getPowerModeForState(int state) {
         switch (state) {
             case Display.STATE_OFF:
-                return SurfaceControl.POWER_MODE_OFF;
             case Display.STATE_DOZE:
                 return SurfaceControl.POWER_MODE_DOZE;
             case Display.STATE_DOZE_SUSPEND:

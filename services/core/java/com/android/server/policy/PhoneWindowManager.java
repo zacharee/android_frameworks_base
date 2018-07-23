@@ -493,7 +493,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     int[] mNavigationBarWidthForRotationInCarMode = new int[4];
 
     WindowState mSignBoard = null;
-//    private final Rect[] mSignBoardFrame = new Rect[4];
 
     private LongSparseArray<IShortcutService> mShortcutKeyServices = new LongSparseArray<>();
 
@@ -2630,11 +2629,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 // $ adb shell setprop config.override_forced_orient true
                 // $ adb shell wm size reset
                 !"true".equals(SystemProperties.get("config.override_forced_orient"));
-
-//        mSignBoardFrame[Surface.ROTATION_0] = new Rect(400, -OFFSET, width, 0);
-//        mSignBoardFrame[Surface.ROTATION_270] = new Rect(height, 400, height + OFFSET, width);
-//        mSignBoardFrame[Surface.ROTATION_180] = new Rect(0, height - OFFSET, width - 400, height);
-//        mSignBoardFrame[Surface.ROTATION_90] = new Rect(0, height - OFFSET, width - 400, height);
     }
 
     /**
@@ -5969,9 +5963,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     break;
             }
 
-            win.computeFrameLw(rect, rect, rect, rect, rect, rect, rect, rect);
             return true;
         }
+
         return false;
     }
 

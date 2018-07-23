@@ -77,7 +77,7 @@ public final class DisplayViewport {
                 physicalFrame.bottom += signBoardHeight;
             }
         }
-        
+
         deviceWidth = viewport.deviceWidth;
         deviceHeight = viewport.deviceHeight;
     }

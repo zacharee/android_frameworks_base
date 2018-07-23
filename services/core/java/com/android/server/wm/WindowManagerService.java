@@ -1372,6 +1372,9 @@ public class WindowManagerService extends IWindowManager.Stub
                             + attrs.token + ".  Aborting.");
                     return WindowManagerGlobal.ADD_BAD_APP_TOKEN;
                 }
+            } else if (type == TYPE_SIGNBOARD_NORMAL) {
+                attrs.token = null;
+                token = new WindowToken(this, client.asBinder(), type, true, displayContent, session.mCanAddInternalSystemWindow);
             } else if (token.asAppWindowToken() != null) {
                 Slog.w(TAG_WM, "Non-null appWindowToken for system window of rootType=" + rootType);
                 // It is not valid to use an app token with other system types; we will

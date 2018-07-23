@@ -878,6 +878,7 @@ public interface WindowManagerPolicy {
             case TYPE_MAGNIFICATION_OVERLAY:
                 // used to highlight the magnified portion of a display
                 return  27;
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_DISPLAY_OVERLAY:
                 // used to simulate secondary display devices
                 return  28;
