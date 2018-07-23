@@ -34,4 +34,7 @@
     <integer name="time_picker_mode_material">2</integer>
 
     <integer name="date_picker_header_max_lines_material">2</integer>
+
+    <!-- Widget category used for SignBoard widgets -->
+    <integer name="signboard_widget_category">0x9000</integer>
 </resources>
