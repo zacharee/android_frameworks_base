@@ -3078,4 +3078,8 @@
 
   <java-symbol type="integer" name="config_stableDeviceDisplayWidth" />
   <java-symbol type="integer" name="config_stableDeviceDisplayHeight" />
+
+  <java-symbol type="integer" name="config_signBoardCategory" />
+  <java-symbol type="dimen" name="config_signBoardHeight" />
+  <java-symbol type="bool" name="config_enableSignBoard" />
 </resources>

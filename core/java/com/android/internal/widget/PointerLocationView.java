@@ -17,6 +17,7 @@
 package com.android.internal.widget;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -26,16 +27,11 @@ import android.hardware.input.InputManager.InputDeviceListener;
 import android.os.SystemProperties;
 import android.util.Log;
 import android.util.Slog;
-import android.view.Display;
-import android.view.InputDevice;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.VelocityTracker;
-import android.view.View;
-import android.view.ViewConfiguration;
-import android.view.WindowManager;
+import android.view.*;
 import android.view.WindowManagerPolicy.PointerEventListener;
 import android.view.MotionEvent.PointerCoords;
+import com.android.internal.R;
+import sun.misc.Resource;
 
 import java.util.ArrayList;
 
@@ -109,7 +105,8 @@ public class PointerLocationView extends View implements InputDeviceListener,
     private final int ESTIMATE_PAST_POINTS = 4;
     private final int ESTIMATE_FUTURE_POINTS = 2;
     private final float ESTIMATE_INTERVAL = 0.02f;
-    private final int mSignBoardHeight = 160;
+    private final int mSignBoardHeight = Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)
+            ? Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight) : 0;
 
     private final InputManager mIm;
 
@@ -229,9 +226,9 @@ public class PointerLocationView extends View implements InputDeviceListener,
         
         Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         
-        if (display.getRotation() != 0) {
+        if (display.getRotation() != Surface.ROTATION_0) {
             offsetY = 0;
-            if (display.getRotation() == 1) {
+            if (display.getRotation() == Surface.ROTATION_90) {
                 offsetX = mSignBoardHeight;
             }
         }

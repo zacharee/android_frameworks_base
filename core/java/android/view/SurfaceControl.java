@@ -18,6 +18,7 @@ package android.view;
 
 import static android.view.WindowManager.LayoutParams.INVALID_WINDOW_TYPE;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.GraphicBuffer;
 import android.graphics.Rect;
@@ -27,6 +28,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.Surface.OutOfResourcesException;
 
+import com.android.internal.R;
 import dalvik.system.CloseGuard;
 
 /**
@@ -120,7 +122,8 @@ public class SurfaceControl {
 
     private static int scWidth = 0;
     private static int scHeight = 0;
-    private static final int signBoardHeight = 160;
+    private static final int signBoardHeight = Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)
+            ? Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight) : 0;
 
     /* flags used in constructor (keep in sync with ISurfaceComposerClient.h) */
 
