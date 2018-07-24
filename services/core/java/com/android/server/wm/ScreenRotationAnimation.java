@@ -280,8 +280,8 @@ class ScreenRotationAnimation {
                             mWidth, mHeight,
                             PixelFormat.OPAQUE, flags);
                             
-                    mSignBoardSurfaceControl = new SurfaceTrace(session, "ScreenshotSurface_SignBoard", 
-                            mWidth, mSignBoardHeight, 
+                    mSignBoardSurfaceControl = new SurfaceTrace(session, "ScreenshotSurface_SignBoard",
+                            mWidth, mSignBoardHeight,
                             PixelFormat.OPAQUE, flags);
                     Slog.w(TAG, "ScreenRotationAnimation ctor: displayOffset="
                             + mOriginalDisplayRect.toShortString());
@@ -290,8 +290,8 @@ class ScreenRotationAnimation {
                             mWidth, mHeight,
                             PixelFormat.OPAQUE, flags);
                             
-                    mSignBoardSurfaceControl = new SurfaceControl(session, "ScreenshotSurface_SignBoard", 
-                            mWidth, mSignBoardHeight, 
+                    mSignBoardSurfaceControl = new SurfaceControl(session, "ScreenshotSurface_SignBoard",
+                            mWidth, mSignBoardHeight,
                             PixelFormat.OPAQUE, flags);
                 }
                 
@@ -300,7 +300,7 @@ class ScreenRotationAnimation {
                 sur.copyFrom(mSurfaceControl);
                 // TODO(multidisplay): we should use the proper display
                 SurfaceControl.screenshot(SurfaceControl.getBuiltInDisplay(
-                        SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN), sur, 
+                        SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN), sur,
                         new Rect(0, mSignBoardHeight, mRealDisplayWidth, mRealDisplayHeight));
                 mSurfaceControl.setLayerStack(display.getLayerStack());
                 mSurfaceControl.setLayer(SCREEN_FREEZE_LAYER_SCREENSHOT);

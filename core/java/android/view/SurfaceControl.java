@@ -120,11 +120,6 @@ public class SurfaceControl {
     private final String mName;
     long mNativeObject; // package visibility only for Surface.java access
 
-    private static int scWidth = 0;
-    private static int scHeight = 0;
-    private static final int signBoardHeight = Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)
-            ? Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight) : 0;
-
     /* flags used in constructor (keep in sync with ISurfaceComposerClient.h) */
 
     /**
@@ -351,9 +346,6 @@ public class SurfaceControl {
             throw new OutOfResourcesException(
                     "Couldn't allocate SurfaceControl native object");
         }
-
-        scWidth = w;
-        scHeight = h;
 
         mCloseGuard.open("release");
     }
@@ -939,15 +931,7 @@ public class SurfaceControl {
         if (consumer == null) {
             throw new IllegalArgumentException("consumer must not be null");
         }
-        if (display == SurfaceControl.getBuiltInDisplay(
-                    SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN)) {
-            sourceCrop.top += signBoardHeight;
-            if (sourceCrop.right == 0 && sourceCrop.bottom == 0) {
-                sourceCrop.right = scWidth;
-                sourceCrop.bottom = scHeight;
-            }
-            sourceCrop.bottom += signBoardHeight;
-        }
+
         nativeScreenshot(display, consumer, sourceCrop, width, height,
                 minLayer, maxLayer, allLayers, useIdentityTransform);
     }
