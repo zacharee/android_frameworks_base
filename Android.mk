@@ -572,6 +572,8 @@ LOCAL_SRC_FILES += \
 
 LOCAL_AIDL_INCLUDES += system/update_engine/binder_bindings
 
+LOCAL_AIDL_INCLUDES += $(FRAMEWORKS_BASE_JAVA_SRC_DIRS)
+
 LOCAL_AIDL_INCLUDES += frameworks/base/lowpan/java
 LOCAL_SRC_FILES += \
 	lowpan/java/android/net/lowpan/ILowpanEnergyScanCallback.aidl \

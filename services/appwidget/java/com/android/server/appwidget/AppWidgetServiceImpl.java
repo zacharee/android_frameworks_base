@@ -1649,7 +1649,7 @@ class AppWidgetServiceImpl extends IAppWidgetService.Stub implements WidgetBacku
         }
 
         synchronized (mLock) {
-            ensureGroupStateLoadedLocked(userId);
+            ensureGroupStateLoadedLocked(userId, false);
 
             ArrayList<AppWidgetProviderInfo> result = new ArrayList<AppWidgetProviderInfo>();
 
