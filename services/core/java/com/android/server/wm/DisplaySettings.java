@@ -82,6 +82,7 @@ public class DisplaySettings {
         } else {
             outRect.set(0, 0, 0, 0);
         }
+        if (uniqueId != null && uniqueId.equals("local:0")) outRect.top += 160;
     }
 
     public void setOverscanLocked(String uniqueId, String name, int left, int top, int right,

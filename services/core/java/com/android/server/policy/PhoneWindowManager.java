@@ -42,6 +42,7 @@ import static android.view.WindowManager.DOCKED_RIGHT;
 import static android.view.WindowManager.DOCKED_TOP;
 import static android.view.WindowManager.INPUT_CONSUMER_NAVIGATION;
 import static android.view.WindowManager.LayoutParams.FIRST_APPLICATION_WINDOW;
+import static android.view.WindowManager.LayoutParams.FIRST_SIGNBOARD_WINDOW;
 import static android.view.WindowManager.LayoutParams.FIRST_SUB_WINDOW;
 import static android.view.WindowManager.LayoutParams.FIRST_SYSTEM_WINDOW;
 import static android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON;
@@ -56,6 +57,7 @@ import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
 import static android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER;
 import static android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
 import static android.view.WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
+import static android.view.WindowManager.LayoutParams.LAST_SIGNBOARD_WINDOW;
 import static android.view.WindowManager.LayoutParams.LAST_SUB_WINDOW;
 import static android.view.WindowManager.LayoutParams.LAST_SYSTEM_WINDOW;
 import static android.view.WindowManager.LayoutParams.MATCH_PARENT;
@@ -97,6 +99,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_QS_DIALOG;
 import static android.view.WindowManager.LayoutParams.TYPE_SCREENSHOT;
 import static android.view.WindowManager.LayoutParams.TYPE_SEARCH_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_SECURE_SYSTEM_OVERLAY;
+import static android.view.WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR_PANEL;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR_SUB_PANEL;
@@ -2862,7 +2865,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         if (!((type >= FIRST_APPLICATION_WINDOW && type <= LAST_APPLICATION_WINDOW)
                 || (type >= FIRST_SUB_WINDOW && type <= LAST_SUB_WINDOW)
-                || (type >= FIRST_SYSTEM_WINDOW && type <= LAST_SYSTEM_WINDOW))) {
+                || (type >= FIRST_SYSTEM_WINDOW && type <= LAST_SYSTEM_WINDOW)
+                || (type >= FIRST_SIGNBOARD_WINDOW && type <= LAST_SIGNBOARD_WINDOW))) {
             return WindowManagerGlobal.ADD_INVALID_TYPE;
         }
 
@@ -2888,6 +2892,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 case TYPE_VOICE_INTERACTION:
                 case TYPE_ACCESSIBILITY_OVERLAY:
                 case TYPE_QS_DIALOG:
+                case TYPE_SIGNBOARD_NORMAL:
                     // The window manager will check these.
                     return ADD_OKAY;
             }
@@ -2979,6 +2984,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             case TYPE_POINTER:
             case TYPE_PRIORITY_PHONE:
             case TYPE_SEARCH_BAR:
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_STATUS_BAR:
             case TYPE_STATUS_BAR_PANEL:
             case TYPE_STATUS_BAR_SUB_PANEL:
@@ -5495,6 +5501,21 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         } else if (attrs.type == TYPE_WALLPAPER) {
            layoutWallpaper(win, pf, df, of, cf);
+        } else if (attrs.type == TYPE_SIGNBOARD_NORMAL) {
+            //Second screen rect
+            //Each value is for an absolute position on the display
+            final Rect sb[] = new Rect[4];
+            sb[0] = new Rect(400, 0, 1440, 160);
+            sb[1] = new Rect(0, 0, 160, 1040);
+            sb[2] = new Rect(0, 2560, 1040, 2720);
+            sb[3] = new Rect(2560, 400, 2720, 1440);
+            pf.set(sb[mDisplayRotation]);
+            df.set(sb[mDisplayRotation]);
+            of.set(sb[mDisplayRotation]);
+            cf.set(sb[mDisplayRotation]);
+            vf.set(sb[mDisplayRotation]);
+            dcf.set(sb[mDisplayRotation]);
+            sf.set(sb[mDisplayRotation]);
         } else if (win == mStatusBar) {
             pf.left = df.left = of.left = mUnrestrictedScreenLeft;
             pf.top = df.top = of.top = mUnrestrictedScreenTop;

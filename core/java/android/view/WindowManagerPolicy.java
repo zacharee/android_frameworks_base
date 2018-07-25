@@ -49,6 +49,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_QS_DIALOG;
 import static android.view.WindowManager.LayoutParams.TYPE_SCREENSHOT;
 import static android.view.WindowManager.LayoutParams.TYPE_SEARCH_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_SECURE_SYSTEM_OVERLAY;
+import static android.view.WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR_PANEL;
 import static android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR_SUB_PANEL;
@@ -876,6 +877,7 @@ public interface WindowManagerPolicy {
             case TYPE_MAGNIFICATION_OVERLAY:
                 // used to highlight the magnified portion of a display
                 return  27;
+            case TYPE_SIGNBOARD_NORMAL:
             case TYPE_DISPLAY_OVERLAY:
                 // used to simulate secondary display devices
                 return  28;
