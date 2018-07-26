@@ -299,7 +299,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static final boolean DEBUG_SPLASH_SCREEN = false;
     static final boolean DEBUG_WAKEUP = false;
     static final boolean SHOW_SPLASH_SCREENS = true;
-    static final int OFFSET = 160;
 
     // Whether to allow dock apps with METADATA_DOCK_HOME to temporarily take over the Home key.
     // No longer recommended for desk docks;
@@ -3163,15 +3162,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     @Override
     public int getNonDecorDisplayWidth(int fullWidth, int fullHeight, int rotation, int uiMode,
             int displayId) {
+        int sbHeight = Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight);
         // TODO(multi-display): Support navigation bar on secondary displays.
         if (displayId == DEFAULT_DISPLAY && hasNavigationBar()) {
             // For a basic navigation bar, when we are in landscape mode we place
             // the navigation bar to the side.
             if (mNavigationBarCanMove && fullWidth > fullHeight) {
-                return fullWidth - getNavigationBarWidth(rotation, uiMode) - OFFSET;
+                return fullWidth - getNavigationBarWidth(rotation, uiMode) - sbHeight;
             }
         }
-        return fullWidth - OFFSET;
+        return fullWidth - sbHeight;
     }
 
     private int getNavigationBarHeight(int rotation, int uiMode) {
@@ -3185,15 +3185,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     @Override
     public int getNonDecorDisplayHeight(int fullWidth, int fullHeight, int rotation, int uiMode,
             int displayId) {
-        // TODO(multi-display): Support navigation bar on secondary displays.
+        int sbHeight = Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight);
+// TODO(multi-display): Support navigation bar on secondary displays.
         if (displayId == DEFAULT_DISPLAY && hasNavigationBar()) {
             // For a basic navigation bar, when we are in portrait mode we place
             // the navigation bar to the bottom.
             if (!mNavigationBarCanMove || fullWidth < fullHeight) {
-                return fullHeight - getNavigationBarHeight(rotation, uiMode) - OFFSET;
+                return fullHeight - getNavigationBarHeight(rotation, uiMode) - sbHeight;
             }
         }
-        return fullHeight - OFFSET;
+        return fullHeight - sbHeight;
     }
 
     @Override
@@ -5945,23 +5946,26 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private boolean layoutWindowLwCustom(WindowState win) {
-        if (win.getAttrs().type == TYPE_SIGNBOARD_NORMAL) {
+        if (win.getAttrs().type == TYPE_SIGNBOARD_NORMAL && Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)) {
             Rect rect = new Rect();
+            int sbHeight = Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight);
 
             switch (mDisplayRotation) {
                 case Surface.ROTATION_0:
-                    rect.set(400, -OFFSET, mOverscanScreenWidth, 0);
+                    rect.set(400, -sbHeight, mOverscanScreenWidth, 0);
                     break;
                 case Surface.ROTATION_90:
-                    rect.set(-OFFSET, 0, 0, mOverscanScreenHeight - 400);
+                    rect.set(-sbHeight, 0, 0, mOverscanScreenHeight - 400);
                     break;
                 case Surface.ROTATION_180:
-                    rect.set(0, mOverscanScreenHeight, mOverscanScreenWidth - 400, mOverscanScreenHeight + OFFSET);
+                    rect.set(0, mOverscanScreenHeight, mOverscanScreenWidth - 400, mOverscanScreenHeight + sbHeight);
                     break;
                 case Surface.ROTATION_270:
-                    rect.set(mOverscanScreenWidth, 400, mOverscanScreenWidth + OFFSET, mOverscanScreenHeight);
+                    rect.set(mOverscanScreenWidth, 400, mOverscanScreenWidth + sbHeight, mOverscanScreenHeight);
                     break;
             }
+
+            win.computeFrameLw(rect, rect, rect, rect, rect, rect, rect, rect);
 
             return true;
         }
