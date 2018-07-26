@@ -5158,6 +5158,11 @@ public final class Settings {
         }
 
         /**
+         * Contains a list of enabled SignBoard components
+         */
+        public static final String ENABLED_SIGNBOARD_COMPONENTS = "enabled_signboard_components";
+
+        /**
          * @deprecated Use {@link android.provider.Settings.Global#DEVELOPMENT_SETTINGS_ENABLED}
          * instead
          */

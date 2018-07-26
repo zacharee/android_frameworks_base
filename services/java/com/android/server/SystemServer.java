@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.database.ContentObserver;
 import android.database.Cursor;
@@ -1905,11 +1906,13 @@ public final class SystemServer {
             traceEnd();
         }, BOOT_TIMINGS_TRACE_LOG);
 
-        try {
-            ServiceManager.addService("signboardservice", new SignBoardService(context));
-        }
-        catch (Throwable e) {
-            Slog.e(TAG, "Failed to add SignBoard Service", e);
+        if (Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)) {
+            try {
+                ServiceManager.addService("signboardservice", new SignBoardService(context));
+            }
+            catch (Throwable e) {
+                Slog.e(TAG, "Failed to add SignBoard Service", e);
+            }
         }
     }
 
