@@ -5159,8 +5159,19 @@ public final class Settings {
 
         /**
          * Contains a list of enabled SignBoard components
+         * The format of this string should be string forms of ComponentNames
+         * separated by semi-colons.
+         * EX:
+         * "com.zacharee1.boredsigns/.widgets.ImageWidget;com.zacharee1.boredsigns/.widgets.InfoWidget"
          */
         public static final String ENABLED_SIGNBOARD_COMPONENTS = "enabled_signboard_components";
+
+        /**
+         * Show the SignBoard in screenshots
+         * Content should be either 1 (enabled) or 0 (disabled)
+         * This depends on config_enableSignBoard being set to true in the config
+         */
+        public static final String ENABLE_SIGNBOARD_SCREENSHOT = "enable_signboard_screenshot";
 
         /**
          * @deprecated Use {@link android.provider.Settings.Global#DEVELOPMENT_SETTINGS_ENABLED}
