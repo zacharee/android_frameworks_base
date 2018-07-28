@@ -580,15 +580,23 @@ class GlobalScreenshot {
         }
 
         // Take the screenshot
-        mScreenBitmap = SurfaceControl.screenshot((int) dims[0], (int) dims[1]);
+        if (Resources.getSystem().getBoolean(com.android.internal.R.bool.config_enableSignBoard)) {
+            int sbHeight = Resources.getSystem().getDimensionPixelSize(com.android.internal.R.dimen.config_signBoardHeight);
 
-        if (Settings.Secure.getInt(mContext.getContentResolver(), Settings.Secure.ENABLE_SIGNBOARD_SCREENSHOT, 0) == 1
-                && Resources.getSystem().getBoolean(com.android.internal.R.bool.config_enableSignBoard)) {
-            mScreenBitmap.recycle();
-            Rect rect = new Rect(0, 0, (int) dims[0],
-                    ((int) dims[1]) + Resources.getSystem().getDimensionPixelSize(com.android.internal.R.dimen.config_signBoardHeight));
-            mScreenBitmap = SurfaceControl.screenshot(rect.right, rect.bottom, rect);
-        }else if (mScreenBitmap == null) {
+            if (Settings.Secure.getInt(mContext.getContentResolver(), Settings.Secure.ENABLE_SIGNBOARD_SCREENSHOT, 0) == 0) {
+                Rect rect = new Rect(0,
+                        sbHeight,
+                        (int) dims[0],
+                        (int) dims[1] + sbHeight);
+                mScreenBitmap = SurfaceControl.screenshot((int) dims[0], (int) dims[1], rect);
+            } else {
+                mScreenBitmap = SurfaceControl.screenshot((int) dims[0], (int) dims[1] + sbHeight);
+            }
+        } else {
+            mScreenBitmap = SurfaceControl.screenshot((int) dims[0], (int) dims[1]);
+        }
+
+        if (mScreenBitmap == null) {
             notifyScreenshotError(mContext, mNotificationManager,
                     R.string.screenshot_failed_to_capture_text);
             finisher.run();
