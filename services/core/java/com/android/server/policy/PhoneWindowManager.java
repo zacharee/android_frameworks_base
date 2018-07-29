@@ -4964,6 +4964,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                               int displayRotation, int uiMode) {
         mDisplayRotation = displayRotation;
         final int overscanLeft, overscanTop, overscanRight, overscanBottom;
+        // Offsets for v20 second screen
+        int ssOffsetLeft = 0, ssOffsetTop = 0, ssOffsetWidth = 0, ssOffsetHeight = 0;
         if (isDefaultDisplay) {
             switch (displayRotation) {
                 case Surface.ROTATION_90:
@@ -4971,24 +4973,30 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     overscanTop = mOverscanRight;
                     overscanRight = mOverscanBottom;
                     overscanBottom = mOverscanLeft;
+                    ssOffsetLeft = 160;
+                    ssOffsetWidth = 160;
                     break;
                 case Surface.ROTATION_180:
                     overscanLeft = mOverscanRight;
                     overscanTop = mOverscanBottom;
                     overscanRight = mOverscanLeft;
                     overscanBottom = mOverscanTop;
+                    ssOffsetHeight = 160;
                     break;
                 case Surface.ROTATION_270:
                     overscanLeft = mOverscanBottom;
                     overscanTop = mOverscanLeft;
                     overscanRight = mOverscanTop;
                     overscanBottom = mOverscanRight;
+                    ssOffsetWidth = 160;
                     break;
                 default:
                     overscanLeft = mOverscanLeft;
                     overscanTop = mOverscanTop;
                     overscanRight = mOverscanRight;
                     overscanBottom = mOverscanBottom;
+                    ssOffsetTop = 160;
+                    ssOffsetHeight = 160;
                     break;
             }
         } else {
@@ -4997,18 +5005,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             overscanRight = 0;
             overscanBottom = 0;
         }
-        mOverscanScreenLeft = mRestrictedOverscanScreenLeft = 0;
-        mOverscanScreenTop = mRestrictedOverscanScreenTop = 0;
-        mOverscanScreenWidth = mRestrictedOverscanScreenWidth = displayWidth;
-        mOverscanScreenHeight = mRestrictedOverscanScreenHeight = displayHeight;
+        mOverscanScreenLeft = mRestrictedOverscanScreenLeft = ssOffsetLeft;
+        mOverscanScreenTop = mRestrictedOverscanScreenTop = ssOffsetTop;
+        mOverscanScreenWidth = mRestrictedOverscanScreenWidth = displayWidth - ssOffsetWidth;
+        mOverscanScreenHeight = mRestrictedOverscanScreenHeight = displayHeight - ssOffsetHeight;
         mSystemLeft = 0;
         mSystemTop = 0;
         mSystemRight = displayWidth;
         mSystemBottom = displayHeight;
-        mUnrestrictedScreenLeft = overscanLeft;
-        mUnrestrictedScreenTop = overscanTop;
-        mUnrestrictedScreenWidth = displayWidth - overscanLeft - overscanRight;
-        mUnrestrictedScreenHeight = displayHeight - overscanTop - overscanBottom;
+        mUnrestrictedScreenLeft = overscanLeft + ssOffsetLeft;
+        mUnrestrictedScreenTop = overscanTop + ssOffsetTop;
+        mUnrestrictedScreenWidth = displayWidth - overscanLeft - overscanRight - ssOffsetWidth;
+        mUnrestrictedScreenHeight = displayHeight - overscanTop - overscanBottom - ssOffsetHeight;
         mRestrictedScreenLeft = mUnrestrictedScreenLeft;
         mRestrictedScreenTop = mUnrestrictedScreenTop;
         mRestrictedScreenWidth = mSystemGestures.screenWidth = mUnrestrictedScreenWidth;
@@ -5172,9 +5180,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     displayRotation);
             if (mNavigationBarPosition == NAV_BAR_BOTTOM) {
                 // It's a system nav bar or a portrait screen; nav bar goes on bottom.
-                int top = displayHeight - overscanBottom
+                int ssOffsetNav = displayRotation == 2 ? 160 : 0;
+                int top = displayHeight - overscanBottom - ssOffsetNav
                         - getNavigationBarHeight(displayRotation, uiMode);
-                mTmpNavigationFrame.set(0, top, displayWidth, displayHeight - overscanBottom);
+                mTmpNavigationFrame.set(0, top, displayWidth, displayHeight - overscanBottom - ssOffsetNav);
                 mStableBottom = mStableFullscreenBottom = mTmpNavigationFrame.top;
                 if (transientNavBarShowing) {
                     mNavigationBarController.setBarShowingLw(true);

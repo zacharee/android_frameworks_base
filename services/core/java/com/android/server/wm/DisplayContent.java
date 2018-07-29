@@ -3028,6 +3028,8 @@ class DisplayContent extends WindowContainer<DisplayContent.DisplayChildWindowCo
                             frame.setEmpty();
                         }
                     }
+                    // Offset for second screen on the v20
+                    if(isDefaultDisplay) frame.top += 160;
                 }
 
                 final boolean foundTargetWs =
