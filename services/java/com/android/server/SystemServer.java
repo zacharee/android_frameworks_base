@@ -1908,7 +1908,7 @@ public final class SystemServer {
 
         if (Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)) {
             try {
-                ServiceManager.addService("signboardservice", new SignBoardService(context));
+                ServiceManager.addService(Context.SIGNBOARD_SERVICE, new SignBoardService(context));
             }
             catch (Throwable e) {
                 Slog.e(TAG, "Failed to add SignBoard Service", e);
