@@ -10,6 +10,7 @@ import android.content.*;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Color;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -91,7 +92,7 @@ public class SignBoardService extends ISignBoardService.Stub {
             }
         }
 
-		signBoardPagerAdapter.updateViews(new ArrayList<>(newSet));
+		mainThreadHandler.post(() -> signBoardPagerAdapter.updateViews(new ArrayList<>(newSet)));
 	}
 
 	private ArrayList<ComponentName> enabledComponents() {
@@ -479,15 +480,15 @@ public class SignBoardService extends ISignBoardService.Stub {
         }
 
         public void onCreate() {
-            context.getContentResolver().registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.LOCATION_MODE), true, this);
             context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON), true, this);
 
             IntentFilter filter = new IntentFilter();
             filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-            filter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
-            filter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+            filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
             filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
             filter.addAction(SignBoardManager.ACTION_TOGGLE_QUICKTOGGLE);
+            filter.addAction(LocationManager.MODE_CHANGED_ACTION);
+            filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
 
             context.registerReceiver(receiver, filter);
         }
