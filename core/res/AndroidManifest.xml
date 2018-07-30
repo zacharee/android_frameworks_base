@@ -551,6 +551,9 @@
     <protected-broadcast android:name="android.media.tv.action.CHANNEL_BROWSABLE_REQUESTED" />
     <protected-broadcast android:name="com.android.server.InputMethodManagerService.SHOW_INPUT_METHOD_PICKER" />
 
+    <protected-broadcast android:name="com.android.signboard.action.UPDATE_QUICKTOGGLES" />
+    <protected-broadcast android:name="com.android.signboard.action.TOGGLE_QT" />
+
     <!-- ====================================================================== -->
     <!--                          RUNTIME PERMISSIONS                           -->
     <!-- ====================================================================== -->
@@ -3556,6 +3559,9 @@
     <!-- Allows an instant app to create foreground services. -->
     <permission android:name="android.permission.INSTANT_APP_FOREGROUND_SERVICE"
         android:protectionLevel="signature|development|instant|appop" />
+
+    <permission android:name="android.permission.MANAGE_SIGNBOARD"
+        android:protectionLevel="signature|development" />
 
     <application android:process="system"
                  android:persistent="true"
