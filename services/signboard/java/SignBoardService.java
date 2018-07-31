@@ -70,7 +70,7 @@ public class SignBoardService extends ISignBoardService.Stub {
     private void parseAndAddPages() {
         signBoardHandler.post(() -> {
             CustomHost host = new CustomHost(context);
-            int category = 0x9000;
+            int category = context.getResources().getInteger(R.integer.config_signBoardCategory);
             List<AppWidgetProviderInfo> infos = AppWidgetManager.getInstance(context).getInstalledProviders(category);
 
             for (AppWidgetProviderInfo info : infos) {
