@@ -1,42 +1,44 @@
 package com.android.server;
 
-import android.appwidget.AppWidgetHost;
-import android.appwidget.AppWidgetHostView;
-import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProviderInfo;
-import android.content.BroadcastReceiver;
+import android.appwidget.*;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.*;
+import android.provider.Settings;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.*;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextClock;
 import com.android.internal.R;
-//import androidx.viewpager.widget.ViewPager;
-//import androidx.viewpager.widget.PagerAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class SignBoardService extends ISignBoardService.Stub {
 	private static final String TAG = "SignBoardService";
+	private static final ArrayList<ComponentName> DEFAULT_PAGES = new ArrayList<ComponentName>() {{
+	    //empty for now
+    }};
+
 	private Handler mainThreadHandler;
 	private SignBoardWorkerThread signBoardWorker;
 	private SignBoardWorkerHandler signBoardHandler;
 	private Context context;
 	private WindowManager windowManager;
 	private LockedLinearLayout linearLayout;
-	private ViewPager viewPager;
+	private LockedViewPager viewPager;
 	private SignBoardPagerAdapter signBoardPagerAdapter;
 	private OrientationListener orientationListener;
 	private CustomHost host;
+	private Observer observer;
 
 	public SignBoardService(Context context) {
 		super();
@@ -47,7 +49,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 		orientationListener.enable();
 		windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
 		signBoardPagerAdapter = new SignBoardPagerAdapter();
-		viewPager = new ViewPager(context);
+		viewPager = new LockedViewPager(context);
 		viewPager.setAdapter(signBoardPagerAdapter);
 		WindowManager.LayoutParams windowManagerParams = new WindowManager.LayoutParams();
 		windowManagerParams.type = WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
@@ -55,7 +57,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 		windowManagerParams.privateFlags = WindowManager.LayoutParams.PRIVATE_FLAG_SHOW_FOR_ALL_USERS;
 		windowManagerParams.setTitle("SignBoard");
 		linearLayout = new LockedLinearLayout(context);
-//		linearLayout.setPadding(400, 0, 0, 0);
 		linearLayout.setBackgroundColor(Color.BLACK);
 		linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 		linearLayout.setGravity(Gravity.RIGHT);
@@ -63,34 +64,44 @@ public class SignBoardService extends ISignBoardService.Stub {
 		windowManager.addView(linearLayout, windowManagerParams);
 		signBoardWorker = new SignBoardWorkerThread("SignBoardServiceWorker");
 		signBoardWorker.start();
+		observer = new Observer();
     }
 
     private void parseAndAddPages() {
 		host.startListening();
 		int category = context.getResources().getInteger(R.integer.config_signBoardCategory);
 		List<AppWidgetProviderInfo> infos = AppWidgetManager.getInstance(context).getInstalledProviders(category);
+		ArrayList<ComponentName> enabled = enabledComponents();
 
-		for (AppWidgetProviderInfo info : infos) {
-			int id = host.allocateAppWidgetId();
-			AppWidgetHostView view = host.createView(context, id, info);
-			view.setAppWidget(id, info);
+//		ArrayList<AppWidgetProviderInfo> newSet = infos.stream()
+//                .filter(info -> enabled.contains(info.provider))
+//                .collect(Collectors.toCollection(ArrayList::new));
 
-			view.setOnLongClickListener(v -> {
-				if (info.configure != null) {
-					Intent configure = new Intent(Intent.ACTION_VIEW);
-					configure.setComponent(info.configure);
-					configure.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-					context.startActivity(configure);
-					return true;
-				}
-				return false;
-			});
+        ArrayList<AppWidgetProviderInfo> newSet = new ArrayList<>();
+        for (ComponentName e : enabled) {
+            for (AppWidgetProviderInfo info : infos) {
+                if (info.provider.equals(e)) newSet.add(info);
+            }
+        }
 
-			AppWidgetManager.getInstance(context).bindAppWidgetId(id, info.provider);
+		Log.e(TAG, newSet.toString());
 
-			mainThreadHandler.post(() -> signBoardPagerAdapter.addView(view));
-		}
+		mainThreadHandler.post(() -> signBoardPagerAdapter.updateViews(new ArrayList<>(newSet)));
 	}
+
+	private ArrayList<ComponentName> enabledComponents() {
+	    ArrayList<ComponentName> ret = new ArrayList<>();
+	    String saved = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_SIGNBOARD_COMPONENTS);
+	    if (saved == null || saved.isEmpty()) return DEFAULT_PAGES;
+
+	    String[] splitSaved = saved.split(";");
+	    for (String comp : splitSaved) {
+	        String[] splitComp = comp.split("/");
+	        ret.add(new ComponentName(splitComp[0], splitComp[1]));
+        }
+
+        return ret;
+    }
 
 	@Override
     public void removeAllViews() {
@@ -113,25 +124,16 @@ public class SignBoardService extends ISignBoardService.Stub {
 		signBoardHandler.sendMessage(msg);
 	}
 
-	public void addView(View view) {
-		Message msg = Message.obtain();
-		msg.what = SignBoardWorkerHandler.ADD_VIEW;
-		msg.obj = view;
-		signBoardHandler.sendMessage(msg);
+	public int addView(AppWidgetHostView view) {
+		return signBoardPagerAdapter.addView(view);
 	}
 
-	public void removeView(View view) {
-		Message msg = Message.obtain();
-		msg.what = SignBoardWorkerHandler.REMOVE_VIEW;
-		msg.obj = view;
-		signBoardHandler.sendMessage(msg);
+	public int removeView(AppWidgetHostView view) {
+		return signBoardPagerAdapter.removeView(view);
 	}
 
-	public void removeView(int position) {
-		Message msg = Message.obtain();
-		msg.what = SignBoardWorkerHandler.REMOVE_VIEW_INDEX;
-		msg.arg1 = position;
-		signBoardHandler.sendMessage(msg);
+	public int removeView(int position) {
+		return signBoardPagerAdapter.removeView(position);
 	}
 
 	private class SignBoardWorkerThread extends Thread {
@@ -145,7 +147,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 		}
 	}
 
-	private class LockedLinearLayout extends LinearLayout {
+	private static class LockedLinearLayout extends LinearLayout {
 		public LockedLinearLayout(Context context) {
 			super(context);
 		}
@@ -155,15 +157,24 @@ public class SignBoardService extends ISignBoardService.Stub {
 			config.orientation = Configuration.ORIENTATION_PORTRAIT;
 			super.dispatchConfigurationChanged(config);
 		}
-	}
+    }
+
+    private static class LockedViewPager extends ViewPager {
+	    public LockedViewPager(Context context) {
+	        super(context);
+        }
+
+        @Override
+        public void dispatchConfigurationChanged(Configuration newConfig) {
+            newConfig.orientation = Configuration.ORIENTATION_PORTRAIT;
+            super.dispatchConfigurationChanged(newConfig);
+        }
+    }
 
 	private class SignBoardWorkerHandler extends Handler {
 		private static final int REMOVE_ALL_VIEWS = 1000;
         private static final int INIT = 1001;
         private static final int REFRESH = 1002;
-        private static final int ADD_VIEW = 1003;
-        private static final int REMOVE_VIEW = 1004;
-        private static final int REMOVE_VIEW_INDEX = 1005;
 
 		@Override
 		public void handleMessage(Message msg) {
@@ -176,22 +187,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 							host.stopListening();
 						});
 						break;
-					case ADD_VIEW:
-						if (msg.obj instanceof View) {
-							Log.i(TAG, "Adding View to SignBoard: " + msg.obj);
-							mainThreadHandler.post(() -> signBoardPagerAdapter.addView((View) msg.obj));
-						}
-						break;
-                    case REMOVE_VIEW:
-                        if (msg.obj instanceof View) {
-							Log.i(TAG, "Removing View from SignBoard: " + msg.obj);
-							mainThreadHandler.post(() -> signBoardPagerAdapter.removeView(viewPager, (View) msg.obj));
-						}
-                        break;
-                    case REMOVE_VIEW_INDEX:
-						Log.i(TAG, "Removing View from SignBoard at index: " + msg.arg1);
-						mainThreadHandler.post(() -> signBoardPagerAdapter.removeView(viewPager, msg.arg1));
-                        break;
                     case INIT:
                         parseAndAddPages();
                         mainThreadHandler.post(() -> host.startListening());
@@ -208,7 +203,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 	}
 
 	public class SignBoardPagerAdapter extends PagerAdapter {
-		private ArrayList<View> views = new ArrayList<>();
+		private ArrayList<AppWidgetHostView> views = new ArrayList<>();
 
 		@Override
 		public int getItemPosition(Object page) {
@@ -229,7 +224,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 
 		@Override
 		public void destroyItem(ViewGroup container, int position, Object object) {
-			container.removeView(views.get(position));
+			container.removeView((View) object);
 		}
 
 		@Override
@@ -242,27 +237,43 @@ public class SignBoardService extends ISignBoardService.Stub {
 			return view == object;
 		}
 
-		public void addAllViews(ArrayList<View> views) {
-		    this.views.addAll(views);
-		    notifyDataSetChanged();
+		public boolean hasWidget(ComponentName provider) {
+            return views.stream().anyMatch(h -> h.getAppWidgetInfo().provider.equals(provider));
         }
 
-		public int addView(View view) {
+		public void updateViews(ArrayList<AppWidgetProviderInfo> newSet) {
+//            ArrayList<AppWidgetHostView> toRemove = views.stream()
+//                    .filter(v -> (newSet.stream().noneMatch(i -> i.provider.equals(v.getAppWidgetInfo().provider))))
+//                    .collect(Collectors.toCollection(ArrayList::new));
+//            ArrayList<AppWidgetProviderInfo> toAdd = newSet.stream()
+//                    .filter(v -> (views.stream().noneMatch(i -> i.getAppWidgetInfo().provider.equals(v.provider))))
+//                    .collect(Collectors.toCollection(ArrayList::new));
+//
+//            views.removeAll(toRemove);
+//            toAdd.forEach(v -> views.add(makeView(v)));
+
+            views.clear();
+            newSet.forEach(i -> views.add(makeView(i)));
+
+            notifyDataSetChanged();
+        }
+
+		public int addView(AppWidgetHostView view) {
 			return addView(view, views.size());
 		}
 
-		public int addView(View view, int position) {
+		public int addView(AppWidgetHostView view, int position) {
 		    if (view == null) return -1;
 			views.add(position, view);
 			notifyDataSetChanged();
 			return position;
 		}
 
-		public int removeView(ViewPager pager, View view) {
-			return removeView(pager, views.indexOf(view));
+		public int removeView(AppWidgetHostView view) {
+			return removeView(views.indexOf(view));
 		}
 
-		public int removeView(ViewPager pager, int position) {
+		public int removeView(int position) {
 			viewPager.setAdapter(null);
 			views.remove(position);
 			viewPager.setAdapter(this);
@@ -282,9 +293,30 @@ public class SignBoardService extends ISignBoardService.Stub {
 		public int getViewCount() {
 			return views.size();
 		}
+
+        AppWidgetHostView makeView(AppWidgetProviderInfo info) {
+            int id = host.allocateAppWidgetId();
+            AppWidgetHostView view = host.createView(context, id, info);
+            view.setAppWidget(id, info);
+
+            view.setOnLongClickListener(v -> {
+                if (info.configure != null) {
+                    Intent configure = new Intent(Intent.ACTION_VIEW);
+                    configure.setComponent(info.configure);
+                    configure.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(configure);
+                    return true;
+                }
+                return false;
+            });
+
+            AppWidgetManager.getInstance(context).bindAppWidgetId(id, info.provider);
+
+            return view;
+        }
 	}
 
-	private class OrientationListener extends OrientationEventListener{
+	private class OrientationListener extends OrientationEventListener {
 		private int rotation = 0;
 
 		public OrientationListener(Context context) {
@@ -317,111 +349,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 		}
 	}
 
-	/*
-	 * Copyright (C) 2016 The CyanogenMod Project
-	 *
-	 * Licensed under the Apache License, Version 2.0 (the "License");
-	 * you may not use this file except in compliance with the License.
-	 * You may obtain a copy of the License at
-	 *
-	 *      http://www.apache.org/licenses/LICENSE-2.0
-	 *
-	 * Unless required by applicable law or agreed to in writing, software
-	 * distributed under the License is distributed on an "AS IS" BASIS,
-	 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	 * See the License for the specific language governing permissions and
-	 * limitations under the License.
-	 */
-
-	/**
-	 * A PagerAdapter that wraps around another PagerAdapter to handle paging wrap-around.
-	 */
-	public class InfinitePagerAdapter extends PagerAdapter {
-
-		private static final String TAG = "InfinitePagerAdapter";
-		private static final boolean DEBUG = false;
-
-		private PagerAdapter adapter;
-
-		public InfinitePagerAdapter(PagerAdapter adapter) {
-			this.adapter = adapter;
-		}
-
-		@Override
-		public int getCount() {
-			// warning: scrolling to very high values (1,000,000+) results in
-			// strange drawing behaviour
-			return Integer.MAX_VALUE;
-		}
-
-		/**
-		 * @return the {@link #getCount()} result of the wrapped adapter
-		 */
-		public int getRealCount() {
-			return adapter.getCount();
-		}
-
-		@Override
-		public Object instantiateItem(ViewGroup container, int position) {
-			int virtualPosition = position % (getRealCount() == 0 ? 1 : getRealCount());
-			debug("instantiateItem: real position: " + position);
-			debug("instantiateItem: virtual position: " + virtualPosition);
-
-			// only expose virtual position to the inner adapter
-			return adapter.instantiateItem(container, virtualPosition);
-		}
-
-		@Override
-		public void destroyItem(ViewGroup container, int position, Object object) {
-			int virtualPosition = position % getRealCount();
-			debug("destroyItem: real position: " + position);
-			debug("destroyItem: virtual position: " + virtualPosition);
-
-			// only expose virtual position to the inner adapter
-			adapter.destroyItem(container, virtualPosition, object);
-		}
-
-		/*
-		 * Delegate rest of methods directly to the inner adapter.
-		 */
-
-		@Override
-		public void finishUpdate(ViewGroup container) {
-			adapter.finishUpdate(container);
-		}
-
-		@Override
-		public boolean isViewFromObject(View view, Object object) {
-			return adapter.isViewFromObject(view, object);
-		}
-
-		@Override
-		public void restoreState(Parcelable bundle, ClassLoader classLoader) {
-			adapter.restoreState(bundle, classLoader);
-		}
-
-		@Override
-		public Parcelable saveState() {
-			return adapter.saveState();
-		}
-
-		@Override
-		public void startUpdate(ViewGroup container) {
-			adapter.startUpdate(container);
-		}
-
-		/*
-		 * End delegation
-		 */
-
-		private void debug(String message) {
-			if (DEBUG) {
-				Log.d(TAG, message);
-			}
-		}
-	}
-
-    public static class CustomHost extends AppWidgetHost {
+    private static class CustomHost extends AppWidgetHost {
         public CustomHost(Context context) {
             super(context, 1001);
         }
@@ -443,6 +371,29 @@ public class SignBoardService extends ISignBoardService.Stub {
                 if (info != null) {
                     setPadding(0, 0, 0, 0);
                 }
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return obj instanceof AppWidgetHostView && getAppWidgetInfo().provider.equals(((AppWidgetHostView) obj).getAppWidgetInfo().provider);
+            }
+        }
+    }
+
+    private class Observer extends ContentObserver {
+	    public Observer() {
+	        super(signBoardHandler);
+
+	        context.getContentResolver().registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ENABLED_SIGNBOARD_COMPONENTS),
+                    true, this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            if (uri.equals(Settings.Secure.getUriFor(Settings.Secure.ENABLED_SIGNBOARD_COMPONENTS))) {
+                Message msg = Message.obtain();
+                msg.what = SignBoardWorkerHandler.INIT;
+                signBoardHandler.sendMessage(msg);
             }
         }
     }
