@@ -5167,6 +5167,12 @@ public final class Settings {
         public static final String ENABLED_SIGNBOARD_COMPONENTS = "enabled_signboard_components";
 
         /**
+         * Contains a list of the current SignBoard QuickTools, in order
+         * Should be a String of keys separated by semi-colons
+         */
+        public static final String CURRENT_SIGNBOARD_QUICK_TOGGLES = "current_signboard_quicktoggles";
+
+        /**
          * Show the SignBoard in screenshots
          * Content should be either 1 (enabled) or 0 (disabled)
          * This depends on config_enableSignBoard being set to true in the config
