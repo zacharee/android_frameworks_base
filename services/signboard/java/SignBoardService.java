@@ -14,11 +14,7 @@ import android.os.*;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.OrientationEventListener;
-import android.view.WindowManager;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextClock;
@@ -40,10 +36,12 @@ public class SignBoardService extends ISignBoardService.Stub {
 	private ViewPager viewPager;
 	private SignBoardPagerAdapter signBoardPagerAdapter;
 	private OrientationListener orientationListener;
+	private CustomHost host;
 
 	public SignBoardService(Context context) {
 		super();
 		this.context = context;
+		host = new CustomHost(context);
 		mainThreadHandler = new Handler(Looper.getMainLooper());
 		orientationListener = new OrientationListener(context);
 		orientationListener.enable();
@@ -57,7 +55,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 		windowManagerParams.privateFlags = WindowManager.LayoutParams.PRIVATE_FLAG_SHOW_FOR_ALL_USERS;
 		windowManagerParams.setTitle("SignBoard");
 		linearLayout = new LockedLinearLayout(context);
-		linearLayout.setPadding(400, 0, 0, 0);
+//		linearLayout.setPadding(400, 0, 0, 0);
 		linearLayout.setBackgroundColor(Color.BLACK);
 		linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 		linearLayout.setGravity(Gravity.RIGHT);
@@ -68,24 +66,19 @@ public class SignBoardService extends ISignBoardService.Stub {
     }
 
     private void parseAndAddPages() {
-        signBoardHandler.post(() -> {
-            CustomHost host = new CustomHost(context);
-            int category = context.getResources().getInteger(R.integer.config_signBoardCategory);
-            List<AppWidgetProviderInfo> infos = AppWidgetManager.getInstance(context).getInstalledProviders(category);
+		host.startListening();
+		int category = context.getResources().getInteger(R.integer.config_signBoardCategory);
+		List<AppWidgetProviderInfo> infos = AppWidgetManager.getInstance(context).getInstalledProviders(category);
 
-            for (AppWidgetProviderInfo info : infos) {
-                int id = host.allocateAppWidgetId();
-                AppWidgetHostView view = host.createView(context, id, info);
-                view.setAppWidget(id, info);
+		for (AppWidgetProviderInfo info : infos) {
+			int id = host.allocateAppWidgetId();
+			AppWidgetHostView view = host.createView(context, id, info);
+			view.setAppWidget(id, info);
 
-                AppWidgetManager.getInstance(context).bindAppWidgetId(id, info.provider);
+			AppWidgetManager.getInstance(context).bindAppWidgetId(id, info.provider);
 
-                Message msg = Message.obtain();
-                msg.what = SignBoardWorkerHandler.ADD_VIEW;
-                msg.obj = view;
-                signBoardHandler.sendMessage(msg);
-            }
-        });
+			mainThreadHandler.post(() -> signBoardPagerAdapter.addView(view));
+		}
 	}
 
 	@Override
@@ -154,12 +147,12 @@ public class SignBoardService extends ISignBoardService.Stub {
 	}
 
 	private class SignBoardWorkerHandler extends Handler {
-		private static final int REMOVE_ALL_VIEWS = 0;
-        private static final int INIT = 1;
-        private static final int REFRESH = 2;
-        private static final int ADD_VIEW = 3;
-        private static final int REMOVE_VIEW = 4;
-        private static final int REMOVE_VIEW_INDEX = 5;
+		private static final int REMOVE_ALL_VIEWS = 1000;
+        private static final int INIT = 1001;
+        private static final int REFRESH = 1002;
+        private static final int ADD_VIEW = 1003;
+        private static final int REMOVE_VIEW = 1004;
+        private static final int REMOVE_VIEW_INDEX = 1005;
 
 		@Override
 		public void handleMessage(Message msg) {
@@ -167,22 +160,30 @@ public class SignBoardService extends ISignBoardService.Stub {
 				switch(msg.what) {
 					case REMOVE_ALL_VIEWS:
 						Log.i(TAG, "Removing All Views");
-						mainThreadHandler.post(() -> signBoardPagerAdapter.removeAllViews());
+						mainThreadHandler.post(() -> {
+							signBoardPagerAdapter.removeAllViews();
+							host.stopListening();
+						});
 						break;
 					case ADD_VIEW:
-						Log.i(TAG, "Adding View to SignBoard: " + msg.obj);
-						mainThreadHandler.post(() -> signBoardPagerAdapter.addView((View) msg.obj));
+						if (msg.obj instanceof View) {
+							Log.i(TAG, "Adding View to SignBoard: " + msg.obj);
+							mainThreadHandler.post(() -> signBoardPagerAdapter.addView((View) msg.obj));
+						}
 						break;
                     case REMOVE_VIEW:
-                        Log.i(TAG, "Removing View from SignBoard: " + msg.obj);
-                        mainThreadHandler.post(() -> signBoardPagerAdapter.removeView(viewPager, (View) msg.obj));
+                        if (msg.obj instanceof View) {
+							Log.i(TAG, "Removing View from SignBoard: " + msg.obj);
+							mainThreadHandler.post(() -> signBoardPagerAdapter.removeView(viewPager, (View) msg.obj));
+						}
                         break;
                     case REMOVE_VIEW_INDEX:
-                        Log.i(TAG, "Removing View from SignBoard at index: " + msg.arg1);
-                        mainThreadHandler.post(() -> signBoardPagerAdapter.removeView(viewPager, msg.arg1));
+						Log.i(TAG, "Removing View from SignBoard at index: " + msg.arg1);
+						mainThreadHandler.post(() -> signBoardPagerAdapter.removeView(viewPager, msg.arg1));
                         break;
                     case INIT:
                         parseAndAddPages();
+                        mainThreadHandler.post(() -> host.startListening());
                         break;
 					case REFRESH:
 						mainThreadHandler.post(() -> signBoardPagerAdapter.removeAllViews());
@@ -273,10 +274,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 	}
 
 	private class OrientationListener extends OrientationEventListener{
-		final int ROTATION_O = 1;
-		final int ROTATION_90 = 2;
-		final int ROTATION_180 = 3;
-		final int ROTATION_270 = 4;
 		private int rotation = 0;
 
 		public OrientationListener(Context context) {
@@ -285,26 +282,26 @@ public class SignBoardService extends ISignBoardService.Stub {
 
 		@Override
 		public void onOrientationChanged(int orientation) {
-			if((orientation < 35 || orientation > 325) && rotation!= ROTATION_O){
-				rotation = ROTATION_O;
-				linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-				linearLayout.setGravity(Gravity.RIGHT);
-				linearLayout.setPadding(400, 0, 0, 0);
-			} else if(orientation > 145 && orientation < 215 && rotation!=ROTATION_180){
-				rotation = ROTATION_180;
-				linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-				linearLayout.setGravity(Gravity.LEFT);
-				linearLayout.setPadding(0, 0, 400, 0);
-			} else if(orientation > 55 && orientation < 125 && rotation!=ROTATION_270){
-				rotation = ROTATION_270;
-				linearLayout.setOrientation(LinearLayout.VERTICAL);
-				linearLayout.setGravity(Gravity.BOTTOM);
-				linearLayout.setPadding(0, 400, 0, 0);
-			} else if(orientation > 235 && orientation < 305 && rotation!=ROTATION_90){
-				rotation = ROTATION_90;
-				linearLayout.setOrientation(LinearLayout.VERTICAL);
-				linearLayout.setGravity(Gravity.TOP);
-				linearLayout.setPadding(0, 0, 0, 400);
+			if (orientation != rotation) {
+				rotation = orientation;
+				switch (context.getDisplay().getRotation()) {
+					case Surface.ROTATION_0:
+						linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+						linearLayout.setGravity(Gravity.RIGHT);
+						break;
+					case Surface.ROTATION_90:
+						linearLayout.setOrientation(LinearLayout.VERTICAL);
+						linearLayout.setGravity(Gravity.TOP);
+						break;
+					case Surface.ROTATION_180:
+						linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+						linearLayout.setGravity(Gravity.LEFT);
+						break;
+					case Surface.ROTATION_270:
+						linearLayout.setOrientation(LinearLayout.VERTICAL);
+						linearLayout.setGravity(Gravity.BOTTOM);
+						break;
+				}
 			}
 		}
 	}
