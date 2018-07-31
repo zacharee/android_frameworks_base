@@ -10,6 +10,9 @@ import android.content.*;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Color;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
@@ -25,7 +28,6 @@ import android.util.Log;
 import android.view.*;
 import android.widget.LinearLayout;
 import com.android.internal.R;
-import com.android.server.audio.AudioService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +49,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 	private OrientationListener orientationListener;
 	private CustomHost host;
 	private Observer observer;
+	private FlashlightController flashlightController;
 
     private QuickToolsListener listener = new QuickToolsListener();
 	private boolean quickToolsEnabled = false;
@@ -54,6 +57,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 	public SignBoardService(Context context) {
 		super();
 		this.context = context;
+		flashlightController = new FlashlightController();
 		host = new CustomHost(context);
 		mainThreadHandler = new Handler(Looper.getMainLooper());
 		orientationListener = new OrientationListener(context);
@@ -146,6 +150,16 @@ public class SignBoardService extends ISignBoardService.Stub {
             signBoardHandler.sendMessage(msg);
         }
     }
+
+    @Override
+	public void setFlashlightEnabled(boolean enabled) {
+		flashlightController.setFlashlightEnabled(enabled);
+	}
+
+	@Override
+	public boolean isFlashlightEnabled() {
+		return flashlightController.flashlightEnabled;
+	}
 
 	public int addView(AppWidgetHostView view) {
 		return signBoardPagerAdapter.addView(view);
@@ -254,6 +268,13 @@ public class SignBoardService extends ISignBoardService.Stub {
                                         audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
                                         break;
                                 }
+                                break;
+							case SignBoardManager.QT_FLASHLIGHT:
+                                setFlashlightEnabled(!isFlashlightEnabled());
+                                break;
+                            case SignBoardManager.QT_ROTATION:
+                                boolean rotEnabled = Settings.System.getInt(context.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
+                                Settings.System.putInt(context.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, rotEnabled ? 0 : 1);
                                 break;
                         }
                         break;
@@ -481,6 +502,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 
         public void onCreate() {
             context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON), true, this);
+            context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(Settings.System.ACCELEROMETER_ROTATION), true, this);
 
             IntentFilter filter = new IntentFilter();
             filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -498,10 +520,53 @@ public class SignBoardService extends ISignBoardService.Stub {
             context.unregisterReceiver(receiver);
         }
 
-        private void update() {
+        public void update() {
             Intent update = new Intent(SignBoardManager.ACTION_UPDATE_QUICKTOGGLES);
             update.setComponent(new ComponentName("com.zacharee1.aospsignboard", "com.zacharee1.aospsignboard.widgets.QuickToggles"));
             context.sendBroadcastAsUser(update, Process.myUserHandle(), Manifest.permission.MANAGE_SIGNBOARD);
+        }
+    }
+
+    private class FlashlightController {
+        public boolean flashlightEnabled = false;
+
+        private CameraManager manager;
+        private CameraManager.TorchCallback callback = new CameraManager.TorchCallback() {
+            @Override
+            public void onTorchModeUnavailable(String cameraId) {
+            }
+
+            @Override
+            public void onTorchModeChanged(String cameraId, boolean enabled) {
+                boolean changed = flashlightEnabled != enabled;
+                flashlightEnabled = enabled;
+
+                if (changed) listener.update();
+            }
+        };
+
+        public FlashlightController() {
+            manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+            manager.registerTorchCallback(callback, new Handler());
+        }
+
+        public void setFlashlightEnabled(boolean enabled) {
+            flashlightEnabled = enabled;
+            try {
+                manager.setTorchMode(getCameraId(), enabled);
+            } catch (CameraAccessException e) {}
+        }
+
+        private String getCameraId() throws CameraAccessException {
+            for (String id : manager.getCameraIdList()) {
+                CameraCharacteristics c = manager.getCameraCharacteristics(id);
+                Boolean flashAvailable = c.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                Integer lensFacing = c.get(CameraCharacteristics.LENS_FACING);
+                if (flashAvailable != null && flashAvailable && lensFacing != null && lensFacing == 1) {
+                    return id;
+                }
+            }
+            return null;
         }
     }
 
