@@ -96,27 +96,9 @@ import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.p2p.IWifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.nfc.NfcManager;
-import android.os.BatteryManager;
-import android.os.BatteryStats;
-import android.os.Build;
-import android.os.DropBoxManager;
-import android.os.HardwarePropertiesManager;
-import android.os.IBatteryPropertiesRegistrar;
-import android.os.IBinder;
-import android.os.IHardwarePropertiesManager;
-import android.os.IPowerManager;
-import android.os.IRecoverySystem;
-import android.os.IUserManager;
-import android.os.IncidentManager;
-import android.os.PowerManager;
+import android.os.*;
 import android.os.Process;
-import android.os.RecoverySystem;
-import android.os.ServiceManager;
 import android.os.ServiceManager.ServiceNotFoundException;
-import android.os.SystemVibrator;
-import android.os.UserHandle;
-import android.os.UserManager;
-import android.os.Vibrator;
 import android.os.health.SystemHealthManager;
 import android.os.storage.StorageManager;
 import android.print.IPrintManager;
@@ -897,6 +879,14 @@ final class SystemServiceRegistry {
             public RulesManager createService(ContextImpl ctx) {
                 return new RulesManager(ctx.getOuterContext());
             }});
+
+        registerService(Context.SIGNBOARD_SERVICE, SignBoardManager.class, new CachedServiceFetcher<SignBoardManager>() {
+            @Override
+            public SignBoardManager createService(ContextImpl ctx) throws ServiceNotFoundException {
+                return new SignBoardManager(ctx.getOuterContext(),
+                        ISignBoardService.Stub.asInterface(ServiceManager.getService(Context.SIGNBOARD_SERVICE)));
+            }
+        });
     }
 
     /**

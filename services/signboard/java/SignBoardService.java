@@ -1,26 +1,33 @@
 package com.android.server;
 
-import android.appwidget.*;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
+import android.Manifest;
+import android.appwidget.AppWidgetHost;
+import android.appwidget.AppWidgetHostView;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProviderInfo;
+import android.bluetooth.BluetoothAdapter;
+import android.content.*;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Color;
+import android.media.AudioManager;
+import android.net.ConnectivityManager;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.*;
+import android.os.Process;
 import android.provider.Settings;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.*;
 import android.widget.LinearLayout;
 import com.android.internal.R;
+import com.android.server.audio.AudioService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class SignBoardService extends ISignBoardService.Stub {
 	private static final String TAG = "SignBoardService";
@@ -29,7 +36,7 @@ public class SignBoardService extends ISignBoardService.Stub {
     }};
 
 	private Handler mainThreadHandler;
-	private SignBoardWorkerThread signBoardWorker;
+	private ServiceThread signBoardWorker;
 	private SignBoardWorkerHandler signBoardHandler;
 	private Context context;
 	private WindowManager windowManager;
@@ -39,6 +46,9 @@ public class SignBoardService extends ISignBoardService.Stub {
 	private OrientationListener orientationListener;
 	private CustomHost host;
 	private Observer observer;
+
+    private QuickToolsListener listener = new QuickToolsListener();
+	private boolean quickToolsEnabled = false;
 
 	public SignBoardService(Context context) {
 		super();
@@ -62,20 +72,17 @@ public class SignBoardService extends ISignBoardService.Stub {
 		linearLayout.setGravity(Gravity.RIGHT);
 		linearLayout.addView(viewPager);
 		windowManager.addView(linearLayout, windowManagerParams);
-		signBoardWorker = new SignBoardWorkerThread("SignBoardServiceWorker");
+		signBoardWorker = new ServiceThread(TAG, Process.THREAD_PRIORITY_FOREGROUND, false);
 		signBoardWorker.start();
+		signBoardHandler = new SignBoardWorkerHandler(signBoardWorker.getLooper());
 		observer = new Observer();
-    }
+	}
 
     private void parseAndAddPages() {
 		host.startListening();
 		int category = context.getResources().getInteger(R.integer.config_signBoardCategory);
 		List<AppWidgetProviderInfo> infos = AppWidgetManager.getInstance(context).getInstalledProviders(category);
 		ArrayList<ComponentName> enabled = enabledComponents();
-
-//		ArrayList<AppWidgetProviderInfo> newSet = infos.stream()
-//                .filter(info -> enabled.contains(info.provider))
-//                .collect(Collectors.toCollection(ArrayList::new));
 
         ArrayList<AppWidgetProviderInfo> newSet = new ArrayList<>();
         for (ComponentName e : enabled) {
@@ -84,9 +91,7 @@ public class SignBoardService extends ISignBoardService.Stub {
             }
         }
 
-		Log.e(TAG, newSet.toString());
-
-		mainThreadHandler.post(() -> signBoardPagerAdapter.updateViews(new ArrayList<>(newSet)));
+		signBoardPagerAdapter.updateViews(new ArrayList<>(newSet));
 	}
 
 	private ArrayList<ComponentName> enabledComponents() {
@@ -124,6 +129,23 @@ public class SignBoardService extends ISignBoardService.Stub {
 		signBoardHandler.sendMessage(msg);
 	}
 
+	@Override
+    public void setQuickToolsEnabled(boolean enabled) {
+	    quickToolsEnabled = enabled;
+	    if (enabled) listener.onCreate();
+	    else listener.onDestroy();
+    }
+
+    @Override
+    public void sendQuickToolsAction(String action) {
+        if (quickToolsEnabled) {
+            Message msg = Message.obtain();
+            msg.obj = action;
+            msg.what = SignBoardWorkerHandler.QT_ACTION;
+            signBoardHandler.sendMessage(msg);
+        }
+    }
+
 	public int addView(AppWidgetHostView view) {
 		return signBoardPagerAdapter.addView(view);
 	}
@@ -134,17 +156,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 
 	public int removeView(int position) {
 		return signBoardPagerAdapter.removeView(position);
-	}
-
-	private class SignBoardWorkerThread extends Thread {
-		public SignBoardWorkerThread(String name) {
-			super(name);
-		}
-		public void run() {
-			Looper.prepare();
-			signBoardHandler = new SignBoardWorkerHandler();
-			Looper.loop();
-		}
 	}
 
 	private static class LockedLinearLayout extends LinearLayout {
@@ -175,6 +186,15 @@ public class SignBoardService extends ISignBoardService.Stub {
 		private static final int REMOVE_ALL_VIEWS = 1000;
         private static final int INIT = 1001;
         private static final int REFRESH = 1002;
+        private static final int QT_ACTION = 1003;
+
+        public SignBoardWorkerHandler() {
+            super();
+        }
+
+        public SignBoardWorkerHandler(Looper looper) {
+            super(looper);
+        }
 
 		@Override
 		public void handleMessage(Message msg) {
@@ -195,6 +215,47 @@ public class SignBoardService extends ISignBoardService.Stub {
 						mainThreadHandler.post(() -> signBoardPagerAdapter.removeAllViews());
 						parseAndAddPages();
 						break;
+                    case QT_ACTION:
+                        switch (msg.obj.toString()) {
+                            case SignBoardManager.QT_WIFI:
+                                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                                wifiManager.setWifiEnabled(!wifiManager.isWifiEnabled());
+                                break;
+                            case SignBoardManager.QT_BT:
+                                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                                if (adapter.isEnabled()) adapter.disable();
+                                else adapter.enable();
+                                break;
+                            case SignBoardManager.QT_AIRPLANE:
+                                ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                                connectivityManager.setAirplaneMode(Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 1);
+                                break;
+                            case SignBoardManager.QT_LOCATION:
+                                boolean enabled = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF)
+                                        != Settings.Secure.LOCATION_MODE_OFF;
+                                int prev = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_PREVIOUS_MODE, Settings.Secure.LOCATION_MODE_OFF);
+                                Settings.Secure.putInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE, enabled ? 0 : prev);
+                                break;
+                            case SignBoardManager.QT_DATA:
+                                TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+                                telephonyManager.setDataEnabled(!telephonyManager.isDataEnabled());
+                                break;
+                            case SignBoardManager.QT_VOLUME:
+                                AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                                switch (audioManager.getRingerMode()) {
+                                    case AudioManager.RINGER_MODE_SILENT:
+                                        audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
+                                        break;
+                                    case AudioManager.RINGER_MODE_VIBRATE:
+                                        audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+                                        break;
+                                    case AudioManager.RINGER_MODE_NORMAL:
+                                        audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
 				}
 			} catch(Exception e) {
 				Log.e(TAG, "Exception in SignBoardWorkerHandler.handleMessage:", e);
@@ -242,16 +303,6 @@ public class SignBoardService extends ISignBoardService.Stub {
         }
 
 		public void updateViews(ArrayList<AppWidgetProviderInfo> newSet) {
-//            ArrayList<AppWidgetHostView> toRemove = views.stream()
-//                    .filter(v -> (newSet.stream().noneMatch(i -> i.provider.equals(v.getAppWidgetInfo().provider))))
-//                    .collect(Collectors.toCollection(ArrayList::new));
-//            ArrayList<AppWidgetProviderInfo> toAdd = newSet.stream()
-//                    .filter(v -> (views.stream().noneMatch(i -> i.getAppWidgetInfo().provider.equals(v.provider))))
-//                    .collect(Collectors.toCollection(ArrayList::new));
-//
-//            views.removeAll(toRemove);
-//            toAdd.forEach(v -> views.add(makeView(v)));
-
             views.clear();
             newSet.forEach(i -> views.add(makeView(i)));
 
@@ -299,7 +350,7 @@ public class SignBoardService extends ISignBoardService.Stub {
             AppWidgetHostView view = host.createView(context, id, info);
             view.setAppWidget(id, info);
 
-            view.setOnLongClickListener(v -> {
+            View.OnLongClickListener listener = v -> {
                 if (info.configure != null) {
                     Intent configure = new Intent(Intent.ACTION_VIEW);
                     configure.setComponent(info.configure);
@@ -308,7 +359,13 @@ public class SignBoardService extends ISignBoardService.Stub {
                     return true;
                 }
                 return false;
-            });
+            };
+
+            view.setOnLongClickListener(listener);
+
+            for (int i = 0; i < view.getChildCount(); i++) {
+                view.getChildAt(i).setOnLongClickListener(listener);
+            }
 
             AppWidgetManager.getInstance(context).bindAppWidgetId(id, info.provider);
 
@@ -395,6 +452,55 @@ public class SignBoardService extends ISignBoardService.Stub {
                 msg.what = SignBoardWorkerHandler.INIT;
                 signBoardHandler.sendMessage(msg);
             }
+        }
+    }
+
+    private class QuickToolsListener extends ContentObserver {
+        private BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equals(SignBoardManager.ACTION_TOGGLE_QUICKTOGGLE)) {
+                     if (intent.hasExtra(SignBoardManager.QT_TOGGLE)) {
+                         sendQuickToolsAction(intent.getStringExtra(SignBoardManager.QT_TOGGLE));
+                     }
+                } else {
+                    update();
+                }
+            }
+        };
+
+        public QuickToolsListener() {
+            super(Handler.getMain());
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            update();
+        }
+
+        public void onCreate() {
+            context.getContentResolver().registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.LOCATION_MODE), true, this);
+            context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON), true, this);
+
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+            filter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
+            filter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+            filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
+            filter.addAction(SignBoardManager.ACTION_TOGGLE_QUICKTOGGLE);
+
+            context.registerReceiver(receiver, filter);
+        }
+
+        public void onDestroy() {
+            context.getContentResolver().unregisterContentObserver(this);
+            context.unregisterReceiver(receiver);
+        }
+
+        private void update() {
+            Intent update = new Intent(SignBoardManager.ACTION_UPDATE_QUICKTOGGLES);
+            update.setComponent(new ComponentName("com.zacharee1.aospsignboard", "com.zacharee1.aospsignboard.widgets.QuickToggles"));
+            context.sendBroadcastAsUser(update, Process.myUserHandle(), Manifest.permission.MANAGE_SIGNBOARD);
         }
     }
 
