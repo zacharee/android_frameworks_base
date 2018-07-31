@@ -75,6 +75,17 @@ public class SignBoardService extends ISignBoardService.Stub {
 			AppWidgetHostView view = host.createView(context, id, info);
 			view.setAppWidget(id, info);
 
+			view.setOnLongClickListener(v -> {
+				if (info.configure != null) {
+					Intent configure = new Intent(Intent.ACTION_VIEW);
+					configure.setComponent(info.configure);
+					configure.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+					context.startActivity(configure);
+					return true;
+				}
+				return false;
+			});
+
 			AppWidgetManager.getInstance(context).bindAppWidgetId(id, info.provider);
 
 			mainThreadHandler.post(() -> signBoardPagerAdapter.addView(view));
