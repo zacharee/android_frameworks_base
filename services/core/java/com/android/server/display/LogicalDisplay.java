@@ -148,6 +148,7 @@ final class LogicalDisplay {
                 mInfo.logicalDensityDpi = mOverrideDisplayInfo.logicalDensityDpi;
                 mInfo.physicalXDpi = mOverrideDisplayInfo.physicalXDpi;
                 mInfo.physicalYDpi = mOverrideDisplayInfo.physicalYDpi;
+                mInfo.signBoardHeight = mOverrideDisplayInfo.signBoardHeight;
             }
         }
         return mInfo;
@@ -369,6 +370,27 @@ final class LogicalDisplay {
         }
         int displayRectTop = (physHeight - displayRectHeight) / 2;
         int displayRectLeft = (physWidth - displayRectWidth) / 2;
+
+        if (displayInfo.signBoardHeight > 0 && (displayDeviceInfo.flags & Display.FLAG_SUPPORTS_PROTECTED_BUFFERS) != 0) {
+            if (orientation == Surface.ROTATION_0) {
+                displayRectTop = 0;
+                displayRectHeight += displayInfo.signBoardHeight;
+                mTempLayerStackRect.set(0, -displayInfo.signBoardHeight, displayInfo.logicalWidth, displayInfo.logicalHeight);
+            } else if (orientation == Surface.ROTATION_90) {
+                displayRectLeft = 0;
+                displayRectWidth += displayInfo.signBoardHeight;
+                mTempLayerStackRect.set(-displayInfo.signBoardHeight, 0, displayInfo.logicalWidth, displayInfo.logicalHeight);
+            } else if (orientation == Surface.ROTATION_180) {
+                displayRectTop = 0;
+                displayRectHeight += displayInfo.signBoardHeight;
+                mTempLayerStackRect.set(0, 0, displayInfo.logicalWidth, displayInfo.logicalHeight + displayInfo.signBoardHeight);
+            } else if (orientation == Surface.ROTATION_270) {
+                displayRectLeft = 0;
+                displayRectWidth += displayInfo.signBoardHeight;
+                mTempLayerStackRect.set(0, 0, displayInfo.logicalWidth + displayInfo.signBoardHeight, displayInfo.logicalHeight);
+            }
+        }
+
         mTempDisplayRect.set(displayRectLeft, displayRectTop,
                 displayRectLeft + displayRectWidth, displayRectTop + displayRectHeight);
 

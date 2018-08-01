@@ -17,6 +17,7 @@
 package com.android.server.wm;
 
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.hardware.power.V1_0.PowerHint;
@@ -40,6 +41,7 @@ import android.view.Display;
 import android.view.DisplayInfo;
 import android.view.WindowManager;
 
+import com.android.internal.R;
 import com.android.internal.os.SomeArgs;
 import com.android.internal.util.ArrayUtils;
 import com.android.server.EventLogTags;
@@ -243,6 +245,11 @@ class RootWindowContainer extends WindowContainer<DisplayContent> {
         displayInfo.overscanTop = rect.top;
         displayInfo.overscanRight = rect.right;
         displayInfo.overscanBottom = rect.bottom;
+        if (displayId == Display.DEFAULT_DISPLAY && Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)) {
+            displayInfo.signBoardHeight = Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight);
+        } else {
+            displayInfo.signBoardHeight = 0;
+        }
         if (mService.mDisplayManagerInternal != null) {
             mService.mDisplayManagerInternal.setDisplayInfoOverrideFromWindowManager(
                     displayId, displayInfo);

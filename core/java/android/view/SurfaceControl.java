@@ -18,6 +18,7 @@ package android.view;
 
 import static android.view.WindowManager.LayoutParams.INVALID_WINDOW_TYPE;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.GraphicBuffer;
 import android.graphics.Rect;
@@ -27,6 +28,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.Surface.OutOfResourcesException;
 
+import com.android.internal.R;
 import dalvik.system.CloseGuard;
 
 /**
@@ -915,6 +917,14 @@ public class SurfaceControl {
         return nativeScreenshot(displayToken, new Rect(), width, height, 0, 0, true,
                 false, Surface.ROTATION_0);
     }
+    
+    public static void screenshot(IBinder display, Surface consumer, Rect sourceCrop) {
+        screenshot(display, consumer, sourceCrop, 0, 0, 0, 0, true, false);
+    }
+
+    public static Bitmap screenshot(int width, int height, Rect sourceCrop) {
+        return nativeScreenshot(getBuiltInDisplay(0), sourceCrop, width, height, 0, 0, true, false, 0);
+    }
 
     public static Bitmap screenshot(int width, int height, Rect sourceCrop) {
         return nativeScreenshot(getBuiltInDisplay(0), sourceCrop, width, height, 0, 0, true, false, 0);
@@ -929,6 +939,7 @@ public class SurfaceControl {
         if (consumer == null) {
             throw new IllegalArgumentException("consumer must not be null");
         }
+
         nativeScreenshot(display, consumer, sourceCrop, width, height,
                 minLayer, maxLayer, allLayers, useIdentityTransform);
     }

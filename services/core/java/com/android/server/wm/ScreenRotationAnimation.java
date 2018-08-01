@@ -59,6 +59,7 @@ class ScreenRotationAnimation {
     static final int SCREEN_FREEZE_LAYER_SCREENSHOT = SCREEN_FREEZE_LAYER_BASE + 1;
     static final int SCREEN_FREEZE_LAYER_EXIT       = SCREEN_FREEZE_LAYER_BASE + 2;
     static final int SCREEN_FREEZE_LAYER_CUSTOM     = SCREEN_FREEZE_LAYER_BASE + 3;
+    static final int SIGNBOARD_FREEZE_LAYER_BASE    = SCREEN_FREEZE_LAYER_BASE + 204;
 
     final Context mContext;
     final DisplayContent mDisplayContent;
@@ -148,6 +149,11 @@ class ScreenRotationAnimation {
     long mHalfwayPoint;
 
     private final WindowManagerService mService;
+    
+    private int mSignBoardHeight;
+    private SurfaceControl mSignBoardSurfaceControl;
+    private int mRealDisplayHeight;
+    private int mRealDisplayWidth;
 
     public void printTo(String prefix, PrintWriter pw) {
         pw.print(prefix); pw.print("mSurface="); pw.print(mSurfaceControl);
@@ -252,6 +258,9 @@ class ScreenRotationAnimation {
         mOriginalRotation = originalRotation;
         mOriginalWidth = originalWidth;
         mOriginalHeight = originalHeight;
+        mSignBoardHeight = displayInfo.signBoardHeight;
+        mRealDisplayWidth = displayContent.mInitialDisplayWidth;
+        mRealDisplayHeight = displayContent.mInitialDisplayHeight;
 
         if (!inTransaction) {
             if (SHOW_LIGHT_TRANSACTIONS) Slog.i(TAG_WM,
@@ -270,24 +279,43 @@ class ScreenRotationAnimation {
                     mSurfaceControl = new SurfaceTrace(session, "ScreenshotSurface",
                             mWidth, mHeight,
                             PixelFormat.OPAQUE, flags);
+                            
+                    mSignBoardSurfaceControl = new SurfaceTrace(session, "ScreenshotSurface_SignBoard",
+                            mWidth, mSignBoardHeight,
+                            PixelFormat.OPAQUE, flags);
                     Slog.w(TAG, "ScreenRotationAnimation ctor: displayOffset="
                             + mOriginalDisplayRect.toShortString());
                 } else {
                     mSurfaceControl = new SurfaceControl(session, "ScreenshotSurface",
                             mWidth, mHeight,
                             PixelFormat.OPAQUE, flags);
+                            
+                    mSignBoardSurfaceControl = new SurfaceControl(session, "ScreenshotSurface_SignBoard",
+                            mWidth, mSignBoardHeight,
+                            PixelFormat.OPAQUE, flags);
                 }
+                
                 // capture a screenshot into the surface we just created
                 Surface sur = new Surface();
                 sur.copyFrom(mSurfaceControl);
                 // TODO(multidisplay): we should use the proper display
                 SurfaceControl.screenshot(SurfaceControl.getBuiltInDisplay(
-                        SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN), sur);
+                        SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN), sur,
+                        new Rect(0, mSignBoardHeight, mRealDisplayWidth, mRealDisplayHeight));
                 mSurfaceControl.setLayerStack(display.getLayerStack());
                 mSurfaceControl.setLayer(SCREEN_FREEZE_LAYER_SCREENSHOT);
                 mSurfaceControl.setAlpha(0);
                 mSurfaceControl.show();
                 sur.destroy();
+                
+                Surface sur1 = new Surface();
+                sur1.copyFrom(mSignBoardSurfaceControl);
+                SurfaceControl.screenshot(SurfaceControl.getBuiltInDisplay(0), sur1, new Rect(0, 0, mRealDisplayWidth, mSignBoardHeight));
+                mSignBoardSurfaceControl.setLayerStack(display.getLayerStack());
+                mSignBoardSurfaceControl.setLayer(SIGNBOARD_FREEZE_LAYER_BASE);
+                mSignBoardSurfaceControl.setAlpha(1.0f);
+                mSignBoardSurfaceControl.show();
+                sur1.destroy();
             } catch (OutOfResourcesException e) {
                 Slog.w(TAG, "Unable to allocate freeze surface", e);
             }
@@ -335,6 +363,28 @@ class ScreenRotationAnimation {
             }
         }
     }
+    
+    private void setSnapshotTransformInTransactionSignBoard(Matrix matrix, float alpha) {
+        if (mSignBoardSurfaceControl != null) {
+            mSnapshotInitialMatrix.getValues(mTmpFloats);
+            switch (mCurRotation) {
+                case Surface.ROTATION_0:
+                    mSignBoardSurfaceControl.setPosition(0.0f, (float) (-mSignBoardHeight));
+                    break;
+                case Surface.ROTATION_90:
+                    mSignBoardSurfaceControl.setPosition((float) (-mSignBoardHeight), (float) mRealDisplayWidth);
+                    break;
+                case Surface.ROTATION_180:
+                    mSignBoardSurfaceControl.setPosition(0.0f, (float) mRealDisplayHeight);
+                    break;
+                case Surface.ROTATION_270:
+                    mSignBoardSurfaceControl.setPosition((float) mRealDisplayHeight, 0.0f);
+                    break;
+            }
+            mSignBoardSurfaceControl.setMatrix(mTmpFloats[0], mTmpFloats[3], mTmpFloats[1], mTmpFloats[4]);
+            mSignBoardSurfaceControl.setAlpha(alpha);
+        }
+    }
 
     public static void createRotationMatrix(int rotation, int width, int height,
             Matrix outMatrix) {
@@ -369,6 +419,7 @@ class ScreenRotationAnimation {
 
         if (DEBUG_STATE) Slog.v(TAG, "**** ROTATION: " + delta);
         setSnapshotTransformInTransaction(mSnapshotInitialMatrix, 1.0f);
+        setSnapshotTransformInTransactionSignBoard(mSnapshotInitialMatrix, 1.0f);
     }
 
     // Must be called while in a transaction.
@@ -672,6 +723,10 @@ class ScreenRotationAnimation {
             mSurfaceControl.destroy();
             mSurfaceControl = null;
         }
+        if (mSignBoardSurfaceControl != null) {
+            mSignBoardSurfaceControl.destroy();
+            mSignBoardSurfaceControl = null;
+        }
         if (mCustomBlackFrame != null) {
             mCustomBlackFrame.kill();
             mCustomBlackFrame = null;
@@ -932,6 +987,13 @@ class ScreenRotationAnimation {
             if (!mMoreStartExit && !mMoreFinishExit && !mMoreRotateExit) {
                 if (DEBUG_STATE) Slog.v(TAG, "Exit animations done, hiding screenshot surface");
                 mSurfaceControl.hide();
+            }
+        }
+        
+        if (mSignBoardSurfaceControl != null) {
+            if (!mMoreStartExit && !mMoreFinishExit && !mMoreRotateExit) {
+                if (DEBUG_STATE) Slog.v(TAG, "Exit animations done, hiding screenshot surface");
+                mSignBoardSurfaceControl.hide();
             }
         }
 

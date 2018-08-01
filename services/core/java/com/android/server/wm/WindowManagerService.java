@@ -1256,6 +1256,7 @@ public class WindowManagerService extends IWindowManager.Stub
             }
 
             AppWindowToken atoken = null;
+
             final boolean hasParent = parentWindow != null;
             // Use existing parent window token for child windows since they go in the same token
             // as there parent window so we can apply the same policy on them.
@@ -4833,6 +4834,8 @@ public class WindowManagerService extends IWindowManager.Stub
             if (displayContent != null) {
                 mAnimator.addDisplayLocked(displayId);
                 displayContent.initializeDisplayBaseInfo();
+                
+//                displayContent.mBaseDisplayHeight += 160;
             }
         }
     }
