@@ -15,6 +15,10 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.location.LocationManager;
 import android.media.AudioManager;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -50,6 +54,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 	private CustomHost host;
 	private Observer observer;
 	private FlashlightController flashlightController;
+	private MusicController musicController;
 
     private QuickToolsListener listener = new QuickToolsListener();
 	private boolean quickToolsEnabled = false;
@@ -81,6 +86,8 @@ public class SignBoardService extends ISignBoardService.Stub {
 		signBoardWorker.start();
 		signBoardHandler = new SignBoardWorkerHandler(signBoardWorker.getLooper());
 		observer = new Observer();
+		observer.onCreate();
+		musicController = new MusicController();
 	}
 
     private void parseAndAddPages() {
@@ -137,8 +144,14 @@ public class SignBoardService extends ISignBoardService.Stub {
 	@Override
     public void setQuickToolsEnabled(boolean enabled) {
 	    quickToolsEnabled = enabled;
-	    if (enabled) listener.onCreate();
-	    else listener.onDestroy();
+	    if (enabled) {
+	        listener.onCreate();
+	        flashlightController.onCreate();
+        }
+	    else {
+	        listener.onDestroy();
+	        flashlightController.onDestroy();
+        }
     }
 
     @Override
@@ -160,6 +173,17 @@ public class SignBoardService extends ISignBoardService.Stub {
 	public boolean isFlashlightEnabled() {
 		return flashlightController.flashlightEnabled;
 	}
+
+	@Override
+	public void setMusicControllerEnabled(boolean enabled) {
+        if (enabled) musicController.onCreate();
+        else musicController.onDestroy();
+    }
+
+    @Override
+    public void sendMusicControllerAction(String key) {
+        musicController.sendMediaEvent(key);
+    }
 
 	public int addView(AppWidgetHostView view) {
 		return signBoardPagerAdapter.addView(view);
@@ -462,8 +486,10 @@ public class SignBoardService extends ISignBoardService.Stub {
     private class Observer extends ContentObserver {
 	    public Observer() {
 	        super(signBoardHandler);
+        }
 
-	        context.getContentResolver().registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ENABLED_SIGNBOARD_COMPONENTS),
+        public void onCreate() {
+            context.getContentResolver().registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ENABLED_SIGNBOARD_COMPONENTS),
                     true, this);
         }
 
@@ -482,8 +508,8 @@ public class SignBoardService extends ISignBoardService.Stub {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equals(SignBoardManager.ACTION_TOGGLE_QUICKTOGGLE)) {
-                     if (intent.hasExtra(SignBoardManager.QT_TOGGLE)) {
-                         sendQuickToolsAction(intent.getStringExtra(SignBoardManager.QT_TOGGLE));
+                     if (intent.hasExtra(SignBoardManager.EXTRA_QT_TOGGLE)) {
+                         sendQuickToolsAction(intent.getStringExtra(SignBoardManager.EXTRA_QT_TOGGLE));
                      }
                 } else {
                     update();
@@ -547,7 +573,14 @@ public class SignBoardService extends ISignBoardService.Stub {
 
         public FlashlightController() {
             manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        }
+
+        public void onCreate() {
             manager.registerTorchCallback(callback, new Handler());
+        }
+
+        public void onDestroy() {
+            manager.unregisterTorchCallback(callback);
         }
 
         public void setFlashlightEnabled(boolean enabled) {
@@ -567,6 +600,72 @@ public class SignBoardService extends ISignBoardService.Stub {
                 }
             }
             return null;
+        }
+    }
+
+    private class MusicController {
+	    private MediaSessionManager mediaManager;
+	    private MediaController latestActive;
+        private MediaController.Callback callback = new MediaController.Callback() {
+            @Override
+            public void onPlaybackStateChanged(PlaybackState state) {
+                update();
+            }
+
+            @Override
+            public void onMetadataChanged(MediaMetadata metadata) {
+                update();
+            }
+        };
+	    private MediaSessionManager.OnActiveSessionsChangedListener listener = controllers -> {
+	        if (controllers.isEmpty()) {
+	            if (latestActive != null) latestActive.unregisterCallback(callback);
+            } else {
+	            latestActive = controllers.get(0);
+	            latestActive.registerCallback(callback);
+            }
+	        update();
+        };
+
+        public MusicController() {
+	        mediaManager = (MediaSessionManager) context.getSystemService(Context.MEDIA_SESSION_SERVICE);
+        }
+
+        public void onCreate() {
+	        mediaManager.addOnActiveSessionsChangedListener(listener, null, signBoardHandler);
+	        if (latestActive != null) latestActive.registerCallback(callback);
+        }
+
+        public void onDestroy() {
+            mediaManager.removeOnActiveSessionsChangedListener(listener);
+            if (latestActive != null) latestActive.unregisterCallback(callback);
+        }
+
+        public void sendMediaEvent(String key) {
+            int code = -1;
+
+            switch (key) {
+                case SignBoardManager.MUSIC_PREV:
+                    code = KeyEvent.KEYCODE_MEDIA_PREVIOUS;
+                    break;
+                case SignBoardManager.MUSIC_PLAY_PAUSE:
+                    code = KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE;
+                    break;
+                case SignBoardManager.MUSIC_NEXT:
+                    code = KeyEvent.KEYCODE_MEDIA_NEXT;
+                    break;
+            }
+
+            if (code != -1) {
+                mediaManager.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
+                mediaManager.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, code));
+            }
+        }
+
+        private void update() {
+            Intent update = new Intent(SignBoardManager.ACTION_UPDATE_MUSIC);
+            update.setComponent(new ComponentName("com.zacharee1.aospsignboard", "com.zacharee1.aospsignboard.widgets.Music"));
+            context.sendBroadcastAsUser(update, Process.myUserHandle(), Manifest.permission.MANAGE_SIGNBOARD);
         }
     }
 

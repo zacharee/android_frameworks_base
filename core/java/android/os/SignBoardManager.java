@@ -20,10 +20,21 @@ public class SignBoardManager {
     @BroadcastBehavior(includeBackground = true)
     public static final String ACTION_TOGGLE_QUICKTOGGLE = "com.android.signboard.action.TOGGLE_QT";
 
+    @SdkConstant(SdkConstant.SdkConstantType.BROADCAST_INTENT_ACTION)
+    @BroadcastBehavior(includeBackground = true)
+    public static final String ACTION_UPDATE_MUSIC = "com.android.signboard.action.UPDATE_MUSIC";
+
+    @SdkConstant(SdkConstant.SdkConstantType.BROADCAST_INTENT_ACTION)
+    @BroadcastBehavior(includeBackground = true)
+    public static final String ACTION_MUSIC_CONTROL = "com.android.signboard.action.MUSIC_CONTROL";
+
+    public static final String EXTRA_QT_TOGGLE = "toggle";
+
+    public static final String EXTRA_MUSIC_BUTTON = "button";
+
     /**
      * QuickToggle related constants
      */
-    public static final String QT_TOGGLE = "toggle";
 
     public static final String QT_WIFI = "wifi";
     public static final String QT_BT = "bluetooth";
@@ -35,6 +46,10 @@ public class SignBoardManager {
     public static final String QT_CAMERA = "camera";
     public static final String QT_FLASHLIGHT = "flashlight";
     public static final String QT_ROTATION = "rotation";
+
+    public static final String QT_KEY = "qt_order";
+
+    public static final String SEPARATOR = ";";
 
     public static final String[] QT_ITEMS = new String[] {
             QT_WIFI,
@@ -49,17 +64,22 @@ public class SignBoardManager {
             QT_ROTATION,
     };
 
-    public static final String QT_KEY = "qt_order";
-
-    public static final String SEPARATOR = ";";
-
     public static final String QT_DEFAULT =
             QT_VOLUME + SEPARATOR
                     + QT_WIFI + SEPARATOR
                     + QT_BT + SEPARATOR
-//            + DATA + SEPARATOR
                     + QT_AIRPLANE + SEPARATOR
                     + QT_LOCATION;
+
+    /**
+     * Music Controller related constants
+     */
+
+    public static final String MUSIC_PREV = "previous";
+    public static final String MUSIC_PLAY_PAUSE = "play_pause";
+    public static final String MUSIC_NEXT = "next";
+    public static final String MUSIC_TITLE = "title";
+    public static final String MUSIC_ARTIST = "artist";
 
     public static SignBoardManager getInstance(Context context) {
         return new SignBoardManager(context, ISignBoardService.Stub.asInterface(ServiceManager.getService(Context.SIGNBOARD_SERVICE)));
@@ -97,9 +117,21 @@ public class SignBoardManager {
         } catch (RemoteException e) {}
     }
 
+    public void setMusicControllerEnabled(boolean enabled) {
+        try {
+            service.setMusicControllerEnabled(enabled);
+        } catch (RemoteException e) {}
+    }
+
     public void sendQuickToolsAction(String action) {
         try {
             service.sendQuickToolsAction(action);
+        } catch (RemoteException e) {}
+    }
+
+    public void sendMusicControllerAction(String action) {
+        try {
+            service.sendMusicControllerAction(action);
         } catch (RemoteException e) {}
     }
 
