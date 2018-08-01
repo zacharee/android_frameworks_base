@@ -1,41 +1,21 @@
 package com.android.server;
 
-<<<<<<< HEAD
-import android.Manifest;
-=======
->>>>>>> lineage-15.1-signboa
 import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
-<<<<<<< HEAD
-import android.bluetooth.BluetoothAdapter;
-import android.content.*;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Color;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
-import android.location.LocationManager;
-import android.media.AudioManager;
-import android.net.ConnectivityManager;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
-=======
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.database.ContentObserver;
-import android.graphics.Color;
-import android.net.Uri;
 import android.os.*;
 import android.os.Process;
 import android.provider.Settings;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.*;
 import android.widget.LinearLayout;
