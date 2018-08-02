@@ -20,6 +20,8 @@ import android.util.Log;
 import android.view.*;
 import android.widget.LinearLayout;
 import com.android.internal.R;
+import com.android.internal.policy.DecorView;
+import com.android.internal.policy.PhoneWindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,20 +29,21 @@ import java.util.List;
 public class SignBoardService extends ISignBoardService.Stub {
 	private static final String TAG = "SignBoardService";
 	private static final ArrayList<ComponentName> DEFAULT_PAGES = new ArrayList<ComponentName>() {{
-	    //empty for now
+	    add(new ComponentName("com.zacharee1.aospsignboard", "com.zacharee1.aospsignboard.widgets.QuickToggles"));
+        add(new ComponentName("com.zacharee1.aospsignboard", "com.zacharee1.aospsignboard.widgets.Music"));
     }};
 
 	private Handler mainThreadHandler;
 	private ServiceThread signBoardWorker;
 	private SignBoardWorkerHandler signBoardHandler;
 	private Context context;
-	private WindowManager windowManager;
 	private LockedLinearLayout linearLayout;
 	private LockedViewPager viewPager;
 	private SignBoardPagerAdapter signBoardPagerAdapter;
 	private OrientationListener orientationListener;
 	private CustomHost host;
 	private Observer observer;
+	private WindowManagerImpl windowManager;
 
 	public SignBoardService(Context context) {
 		super();
@@ -49,7 +52,7 @@ public class SignBoardService extends ISignBoardService.Stub {
 		mainThreadHandler = new Handler(Looper.getMainLooper());
 		orientationListener = new OrientationListener(context);
 		orientationListener.enable();
-		windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+		windowManager = new WindowManagerImpl(context).createLocalWindowManager(new SignBoardWindow(context));
 		signBoardPagerAdapter = new SignBoardPagerAdapter();
 		viewPager = new LockedViewPager(context);
 		viewPager.setAdapter(signBoardPagerAdapter);
@@ -139,7 +142,32 @@ public class SignBoardService extends ISignBoardService.Stub {
 			super(context);
 		}
 
-		@Override
+        @Override
+        protected void onConfigurationChanged(Configuration newConfig) {
+            ViewGroup.LayoutParams params = getLayoutParams();
+            params.width = 1040;
+            params.height = 160;
+            setLayoutParams(params);
+
+            int rotation = getContext().getDisplay().getRotation();
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    setRotation(0);
+                    break;
+                case Surface.ROTATION_90:
+                    setRotation(-90);
+                    break;
+                case Surface.ROTATION_180:
+                    setRotation(0);
+                    break;
+                case Surface.ROTATION_270:
+                    setRotation(-270);
+                    break;
+            }
+            super.onConfigurationChanged(newConfig);
+        }
+
+        @Override
 		public void dispatchConfigurationChanged(Configuration config) {
 			config.orientation = Configuration.ORIENTATION_PORTRAIT;
 			super.dispatchConfigurationChanged(config);
@@ -177,7 +205,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 			try {
 				switch(msg.what) {
 					case REMOVE_ALL_VIEWS:
-						Log.i(TAG, "Removing All Views");
 						mainThreadHandler.post(() -> {
 							signBoardPagerAdapter.removeAllViews();
 							host.stopListening();
@@ -369,6 +396,12 @@ public class SignBoardService extends ISignBoardService.Stub {
             }
 
             @Override
+            public void dispatchConfigurationChanged(Configuration newConfig) {
+                newConfig.orientation = Configuration.ORIENTATION_PORTRAIT;
+                super.dispatchConfigurationChanged(newConfig);
+            }
+
+            @Override
             public boolean equals(Object obj) {
                 return obj instanceof AppWidgetHostView && getAppWidgetInfo().provider.equals(((AppWidgetHostView) obj).getAppWidgetInfo().provider);
             }
@@ -395,6 +428,38 @@ public class SignBoardService extends ISignBoardService.Stub {
         }
     }
 
+    public static class SignBoardWindow extends PhoneWindow {
+	    public SignBoardWindow(Context context) {
+	        super(context);
+        }
 
+        @Override
+        public void onConfigurationChanged(Configuration newConfig) {
+	        newConfig.orientation = Configuration.ORIENTATION_PORTRAIT;
+            super.onConfigurationChanged(newConfig);
+        }
 
+        @Override
+        protected DecorView generateDecor(int featureId) {
+            return new SignBoardDecorView(getContext(), -1, this, getAttributes());
+        }
+
+        public static class SignBoardDecorView extends DecorView {
+	        public SignBoardDecorView(Context context, int featureId, PhoneWindow window, WindowManager.LayoutParams attrs) {
+	            super(context, featureId, window, attrs);
+            }
+
+            @Override
+            protected void onConfigurationChanged(Configuration newConfig) {
+	            newConfig.orientation = Configuration.ORIENTATION_PORTRAIT;
+                super.onConfigurationChanged(newConfig);
+            }
+
+            @Override
+            public void dispatchConfigurationChanged(Configuration newConfig) {
+                newConfig.orientation = Configuration.ORIENTATION_PORTRAIT;
+                super.dispatchConfigurationChanged(newConfig);
+            }
+        }
+    }
 }

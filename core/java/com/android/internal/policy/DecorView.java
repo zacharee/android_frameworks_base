@@ -16,12 +16,30 @@
 
 package com.android.internal.policy;
 
-import android.graphics.Outline;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.graphics.*;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.InsetDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.os.RemoteException;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.Pair;
-import android.view.ViewOutlineProvider;
+import android.util.TypedValue;
+import android.view.*;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.animation.AnimationUtils;
+import android.view.animation.Interpolator;
+import android.widget.FrameLayout;
+import android.widget.PopupWindow;
 import com.android.internal.R;
 import com.android.internal.policy.PhoneWindow.PanelFeatureState;
 import com.android.internal.policy.PhoneWindow.PhoneWindowMenuCallback;
@@ -37,79 +55,17 @@ import com.android.internal.widget.FloatingToolbar;
 
 import java.util.List;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ObjectAnimator;
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.LinearGradient;
-import android.graphics.Paint;
-import android.graphics.PixelFormat;
-import android.graphics.Rect;
-import android.graphics.Region;
-import android.graphics.Shader;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.os.RemoteException;
-import android.util.DisplayMetrics;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.ActionMode;
-import android.view.ContextThemeWrapper;
-import android.view.DisplayListCanvas;
-import android.view.Gravity;
-import android.view.InputQueue;
-import android.view.KeyEvent;
-import android.view.KeyboardShortcutGroup;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.ThreadedRenderer;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewStub;
-import android.view.ViewTreeObserver;
-import android.view.Window;
-import android.view.WindowCallbacks;
-import android.view.WindowInsets;
-import android.view.WindowManager;
-import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityManager;
-import android.view.animation.AnimationUtils;
-import android.view.animation.Interpolator;
-import android.widget.FrameLayout;
-import android.widget.PopupWindow;
-
 import static android.app.ActivityManager.StackId;
-import static android.app.ActivityManager.StackId.FULLSCREEN_WORKSPACE_STACK_ID;
-import static android.app.ActivityManager.StackId.FREEFORM_WORKSPACE_STACK_ID;
-import static android.app.ActivityManager.StackId.PINNED_STACK_ID;
-import static android.app.ActivityManager.StackId.INVALID_STACK_ID;
+import static android.app.ActivityManager.StackId.*;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.os.Build.VERSION_CODES.M;
 import static android.os.Build.VERSION_CODES.N;
-import static android.view.View.MeasureSpec.AT_MOST;
-import static android.view.View.MeasureSpec.EXACTLY;
-import static android.view.View.MeasureSpec.getMode;
+import static android.view.View.MeasureSpec.*;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.view.Window.DECOR_CAPTION_SHADE_DARK;
 import static android.view.Window.DECOR_CAPTION_SHADE_LIGHT;
-import static android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-import static android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN;
-import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
-import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN;
-import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
-import static android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
-import static android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS;
-import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION;
-import static android.view.WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
-import static android.view.WindowManager.LayoutParams.TYPE_DRAWN_APPLICATION;
+import static android.view.WindowManager.LayoutParams.*;
 import static com.android.internal.policy.PhoneWindow.FEATURE_OPTIONS_PANEL;
 
 /** @hide */
@@ -260,7 +216,7 @@ public class DecorView extends FrameLayout implements RootViewSurfaceTaker, Wind
     private final Paint mVerticalResizeShadowPaint = new Paint();
     private final Paint mHorizontalResizeShadowPaint = new Paint();
 
-    DecorView(Context context, int featureId, PhoneWindow window,
+    public DecorView(Context context, int featureId, PhoneWindow window,
             WindowManager.LayoutParams params) {
         super(context);
         mFeatureId = featureId;

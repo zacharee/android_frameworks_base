@@ -3590,6 +3590,10 @@ public final class ViewRootImpl implements ViewParent,
 
         // Handle configuration change.
         if (mForceNextConfigUpdate || mLastConfigurationFromResources.diff(config) != 0) {
+            if (mWindowAttributes.type == WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL) {
+                config.orientation = Configuration.ORIENTATION_PORTRAIT;
+            }
+
             // Update the display with new DisplayAdjustments.
             mDisplay = ResourcesManager.getInstance().getAdjustedDisplay(
                     mDisplay.getDisplayId(), localResources);
@@ -3600,10 +3604,6 @@ public final class ViewRootImpl implements ViewParent,
             if (lastLayoutDirection != currentLayoutDirection
                     && mViewLayoutDirectionInitial == View.LAYOUT_DIRECTION_INHERIT) {
                 mView.setLayoutDirection(currentLayoutDirection);
-            }
-
-            if (mWindowAttributes.type == WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL) {
-                config.orientation = Configuration.ORIENTATION_PORTRAIT;
             }
 
             mView.dispatchConfigurationChanged(config);
