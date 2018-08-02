@@ -3004,7 +3004,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public int getNonDecorDisplayWidth(int fullWidth, int fullHeight, int rotation, int uiMode,
             int displayId) {
         int sbHeight = Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight);
-        boolean portrait = rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90;
+        boolean portrait = rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180;
         // TODO(multi-display): Support navigation bar on secondary displays.
         if (displayId == DEFAULT_DISPLAY && hasNavigationBar()) {
             // For a basic navigation bar, when we are in landscape mode we place
@@ -3028,7 +3028,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public int getNonDecorDisplayHeight(int fullWidth, int fullHeight, int rotation, int uiMode,
             int displayId) {
         int sbHeight = Resources.getSystem().getDimensionPixelSize(R.dimen.config_signBoardHeight);
-        boolean portrait = rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90;
+        boolean portrait = rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180;
         // TODO(multi-display): Support navigation bar on secondary displays.
         if (displayId == DEFAULT_DISPLAY && hasNavigationBar()) {
             // For a basic navigation bar, when we are in portrait mode we place
