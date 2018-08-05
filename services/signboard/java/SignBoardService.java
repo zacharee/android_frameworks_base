@@ -4,9 +4,7 @@ import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
+import android.content.*;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Color;
@@ -23,6 +21,10 @@ import com.android.internal.R;
 import com.android.internal.policy.DecorView;
 import com.android.internal.policy.PhoneWindow;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +46,33 @@ public class SignBoardService extends ISignBoardService.Stub {
 	private CustomHost host;
 	private Observer observer;
 	private WindowManagerImpl windowManager;
+	private PowerManager.WakeLock aodWakeLock;
+
+	private BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+		    Log.e(TAG, intent.getAction());
+			switch (intent.getAction()) {
+				case Intent.ACTION_SCREEN_OFF:
+					aodWakeLock.acquire();
+					File extBrightness = new File("/sys/class/leds/lcd-backlight-ex/brightness");
+                    BufferedWriter writer;
+
+                    try {
+                        writer = new BufferedWriter(new FileWriter(extBrightness));
+                        writer.write("100");
+                        writer.flush();
+                        writer.close();
+                    } catch (IOException e) {
+                        Log.e(TAG, e.getLocalizedMessage());
+                    }
+                    break;
+                case Intent.ACTION_SCREEN_ON:
+                    if (aodWakeLock.isHeld()) aodWakeLock.release();
+                    break;
+			}
+		}
+	};
 
 	public SignBoardService(Context context) {
 		super();
@@ -72,6 +101,12 @@ public class SignBoardService extends ISignBoardService.Stub {
 		signBoardHandler = new SignBoardWorkerHandler(signBoardWorker.getLooper());
 		observer = new Observer();
 		observer.onCreate();
+		aodWakeLock = context.getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AOD");
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        context.registerReceiver(screenReceiver, filter);
 	}
 
     private void parseAndAddPages() {
@@ -143,31 +178,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 		}
 
         @Override
-        protected void onConfigurationChanged(Configuration newConfig) {
-            ViewGroup.LayoutParams params = getLayoutParams();
-            params.width = 1040;
-            params.height = 160;
-            setLayoutParams(params);
-
-            int rotation = getContext().getDisplay().getRotation();
-            switch (rotation) {
-                case Surface.ROTATION_0:
-                    setRotation(0);
-                    break;
-                case Surface.ROTATION_90:
-                    setRotation(-90);
-                    break;
-                case Surface.ROTATION_180:
-                    setRotation(0);
-                    break;
-                case Surface.ROTATION_270:
-                    setRotation(-270);
-                    break;
-            }
-            super.onConfigurationChanged(newConfig);
-        }
-
-        @Override
 		public void dispatchConfigurationChanged(Configuration config) {
 			config.orientation = Configuration.ORIENTATION_PORTRAIT;
 			super.dispatchConfigurationChanged(config);
@@ -190,7 +200,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 		private static final int REMOVE_ALL_VIEWS = 1000;
         private static final int INIT = 1001;
         private static final int REFRESH = 1002;
-        private static final int QT_ACTION = 1003;
 
         public SignBoardWorkerHandler() {
             super();
@@ -218,9 +227,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 						mainThreadHandler.post(() -> signBoardPagerAdapter.removeAllViews());
 						parseAndAddPages();
 						break;
-                    case QT_ACTION:
-
-                        break;
 				}
 			} catch(Exception e) {
 				Log.e(TAG, "Exception in SignBoardWorkerHandler.handleMessage:", e);
@@ -349,24 +355,17 @@ public class SignBoardService extends ISignBoardService.Stub {
 		public void onOrientationChanged(int orientation) {
 			if (orientation != rotation) {
 				rotation = orientation;
-				switch (context.getDisplay().getRotation()) {
-					case Surface.ROTATION_0:
-						linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-						linearLayout.setGravity(Gravity.RIGHT);
-						break;
-					case Surface.ROTATION_90:
-						linearLayout.setOrientation(LinearLayout.VERTICAL);
-						linearLayout.setGravity(Gravity.TOP);
-						break;
-					case Surface.ROTATION_180:
-						linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-						linearLayout.setGravity(Gravity.LEFT);
-						break;
-					case Surface.ROTATION_270:
-						linearLayout.setOrientation(LinearLayout.VERTICAL);
-						linearLayout.setGravity(Gravity.BOTTOM);
-						break;
-				}
+//				linearLayout.dispatchConfigurationChanged(context.getResources().getConfiguration());
+//				switch (context.getDisplay().getRotation()) {
+//					case Surface.ROTATION_0:
+//						break;
+//					case Surface.ROTATION_90:
+//						break;
+//					case Surface.ROTATION_180:
+//						break;
+//					case Surface.ROTATION_270:
+//						break;
+//				}
 			}
 		}
 	}
@@ -447,12 +446,6 @@ public class SignBoardService extends ISignBoardService.Stub {
         public static class SignBoardDecorView extends DecorView {
 	        public SignBoardDecorView(Context context, int featureId, PhoneWindow window, WindowManager.LayoutParams attrs) {
 	            super(context, featureId, window, attrs);
-            }
-
-            @Override
-            protected void onConfigurationChanged(Configuration newConfig) {
-	            newConfig.orientation = Configuration.ORIENTATION_PORTRAIT;
-                super.onConfigurationChanged(newConfig);
             }
 
             @Override
