@@ -42,7 +42,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 	private LockedLinearLayout linearLayout;
 	private LockedViewPager viewPager;
 	private SignBoardPagerAdapter signBoardPagerAdapter;
-	private OrientationListener orientationListener;
 	private CustomHost host;
 	private Observer observer;
 	private WindowManagerImpl windowManager;
@@ -79,15 +78,14 @@ public class SignBoardService extends ISignBoardService.Stub {
 		this.context = context;
 		host = new CustomHost(context);
 		mainThreadHandler = new Handler(Looper.getMainLooper());
-		orientationListener = new OrientationListener(context);
-		orientationListener.enable();
 		windowManager = new WindowManagerImpl(context).createLocalWindowManager(new SignBoardWindow(context));
 		signBoardPagerAdapter = new SignBoardPagerAdapter();
 		viewPager = new LockedViewPager(context);
 		viewPager.setAdapter(signBoardPagerAdapter);
 		WindowManager.LayoutParams windowManagerParams = new WindowManager.LayoutParams();
 		windowManagerParams.type = WindowManager.LayoutParams.TYPE_SIGNBOARD_NORMAL;
-		windowManagerParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+		windowManagerParams.flags =
+				WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_SLIPPERY;
 		windowManagerParams.privateFlags = WindowManager.LayoutParams.PRIVATE_FLAG_SHOW_FOR_ALL_USERS;
 		windowManagerParams.setTitle("SignBoard");
 		linearLayout = new LockedLinearLayout(context);
@@ -342,32 +340,6 @@ public class SignBoardService extends ISignBoardService.Stub {
 
             return view;
         }
-	}
-
-	private class OrientationListener extends OrientationEventListener {
-		private int rotation = 0;
-
-		public OrientationListener(Context context) {
-			super(context);
-		}
-
-		@Override
-		public void onOrientationChanged(int orientation) {
-			if (orientation != rotation) {
-				rotation = orientation;
-//				linearLayout.dispatchConfigurationChanged(context.getResources().getConfiguration());
-//				switch (context.getDisplay().getRotation()) {
-//					case Surface.ROTATION_0:
-//						break;
-//					case Surface.ROTATION_90:
-//						break;
-//					case Surface.ROTATION_180:
-//						break;
-//					case Surface.ROTATION_270:
-//						break;
-//				}
-			}
-		}
 	}
 
     private static class CustomHost extends AppWidgetHost {
