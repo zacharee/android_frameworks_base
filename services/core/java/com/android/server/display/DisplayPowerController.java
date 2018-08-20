@@ -18,6 +18,7 @@ package com.android.server.display;
 
 import android.app.ActivityManager;
 import com.android.internal.app.IBatteryStats;
+import com.android.internal.hardware.AmbientDisplayConfiguration;
 import com.android.server.LocalServices;
 import com.android.server.am.BatteryStatsService;
 import com.android.server.lights.LightsManager;
@@ -46,6 +47,7 @@ import android.util.TimeUtils;
 import android.view.Display;
 import android.view.WindowManagerPolicy;
 
+import java.io.File;
 import java.io.PrintWriter;
 
 /**
@@ -185,6 +187,8 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
     // to reach the final state.
     private boolean mBrightnessBucketsInDozeConfig;
 
+    private final AmbientDisplayConfiguration mAmbientDisplayConfiguration;
+
     // The pending power request.
     // Initially null until the first call to requestPowerState.
     // Guarded by mLock.
@@ -313,6 +317,8 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
         final Resources resources = context.getResources();
         final int screenBrightnessSettingMinimum = clampAbsoluteBrightness(resources.getInteger(
                 com.android.internal.R.integer.config_screenBrightnessSettingMinimum));
+
+        mAmbientDisplayConfiguration = new AmbientDisplayConfiguration(context);
 
         mScreenBrightnessDozeConfig = clampAbsoluteBrightness(resources.getInteger(
                 com.android.internal.R.integer.config_screenBrightnessDoze));
@@ -815,6 +821,16 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
             } else {
                 animateScreenBrightness(brightness, 0);
             }
+        }
+
+        if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT)) {
+            try (PrintWriter directlcd = new PrintWriter(new File("/sys/class/leds/lcd-backlight/brightness"))) {
+                if (mPowerRequest.dozeScreenState != Display.STATE_UNKNOWN) {
+                    directlcd.print(0);
+                } else {
+                    directlcd.print(brightness);
+                }
+            } catch (Exception e) { }
         }
 
         // Determine whether the display is ready for use in the newly requested state.

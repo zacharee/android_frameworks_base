@@ -146,6 +146,7 @@ import android.widget.Toast;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.colorextraction.ColorExtractor;
+import com.android.internal.hardware.AmbientDisplayConfiguration;
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.messages.nano.SystemMessageProto.SystemMessage;
@@ -7605,7 +7606,8 @@ public class StatusBar extends SystemUI implements DemoMode,
             boolean showOnKeyguard = shouldShowOnKeyguard(entry.notification);
             if (suppressedSummary
                     || (isLockscreenPublicMode(userId) && !mShowLockscreenNotifications)
-                    || (onKeyguard && !showOnKeyguard)) {
+                    || (onKeyguard && !showOnKeyguard)
+                    || (new AmbientDisplayConfiguration(mContext).alwaysOnHidden(UserHandle.USER_CURRENT) && mDozing)) {
                 entry.row.setVisibility(View.GONE);
             } else {
                 boolean wasGone = entry.row.getVisibility() == View.GONE;

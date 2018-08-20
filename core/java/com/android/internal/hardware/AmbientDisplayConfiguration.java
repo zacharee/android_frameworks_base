@@ -19,6 +19,7 @@ package com.android.internal.hardware;
 import com.android.internal.R;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.provider.Settings;
@@ -94,7 +95,16 @@ public class AmbientDisplayConfiguration {
     }
 
     public boolean alwaysOnEnabled(int user) {
-        return boolSettingDefaultOn(Settings.Secure.DOZE_ALWAYS_ON, user) && alwaysOnAvailable()
+        return (boolSettingDefaultOn(Settings.Secure.DOZE_ALWAYS_ON, user)
+                || Resources.getSystem().getBoolean(R.bool.config_enableSignBoard))
+                && alwaysOnAvailable()
+                && !accessibilityInversionEnabled(user);
+    }
+
+    public boolean alwaysOnHidden(int user) {
+        return !boolSettingDefaultOn(Settings.Secure.DOZE_ALWAYS_ON, user)
+                && Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)
+                && alwaysOnAvailable()
                 && !accessibilityInversionEnabled(user);
     }
 

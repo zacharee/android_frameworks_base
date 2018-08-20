@@ -26,6 +26,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Trace;
+import android.os.UserHandle;
 import android.util.MathUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,7 @@ import com.android.internal.colorextraction.ColorExtractor;
 import com.android.internal.colorextraction.ColorExtractor.GradientColors;
 import com.android.internal.colorextraction.ColorExtractor.OnColorsChangedListener;
 import com.android.internal.graphics.ColorUtils;
+import com.android.internal.hardware.AmbientDisplayConfiguration;
 import com.android.keyguard.KeyguardUpdateMonitor;
 import com.android.systemui.Dependency;
 import com.android.systemui.R;
@@ -86,6 +88,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener,
     private final UnlockMethodCache mUnlockMethodCache;
     private final View mHeadsUpScrim;
     private final KeyguardUpdateMonitor mKeyguardUpdateMonitor;
+    private final AmbientDisplayConfiguration mAmbientDisplayConfiguration;
 
     private final SysuiColorExtractor mColorExtractor;
     private GradientColors mLockColors;
@@ -145,6 +148,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener,
         mHeadsUpScrim = headsUpScrim;
         mScrimVisibleListener = scrimVisibleListener;
         final Context context = scrimBehind.getContext();
+        mAmbientDisplayConfiguration = new AmbientDisplayConfiguration(context);
         mUnlockMethodCache = UnlockMethodCache.getInstance(context);
         mKeyguardUpdateMonitor = KeyguardUpdateMonitor.getInstance(context);
         mLightBarController = lightBarController;
@@ -297,6 +301,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener,
     }
 
     public void setDozeInFrontAlpha(float alpha) {
+        if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT) && mDozing) alpha = 1f;
         mDozeInFrontAlpha = alpha;
         updateScrimColor(mScrimInFront);
     }
