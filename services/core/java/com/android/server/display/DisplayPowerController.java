@@ -825,11 +825,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
         if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT)) {
             try (PrintWriter directlcd = new PrintWriter(new File("/sys/class/leds/lcd-backlight/brightness"))) {
-                if (mPowerRequest.dozeScreenState != Display.STATE_UNKNOWN) {
-                    directlcd.print(0);
-                } else {
-                    directlcd.print(brightness);
-                }
+                directlcd.print(mPowerRequest.dozeScreenState != Display.STATE_UNKNOWN ? 0 : brightness);
             } catch (Exception e) { }
         }
 

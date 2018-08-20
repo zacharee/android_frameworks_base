@@ -2525,9 +2525,10 @@ public final class PowerManagerService extends SystemService
                 mDisplayPowerRequest.dozeScreenBrightness = PowerManager.BRIGHTNESS_DEFAULT;
             }
 
-            if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT)) {
+            if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT)
+                    && mDisplayPowerRequest.policy == DisplayPowerRequest.POLICY_DOZE) {
                 try (PrintWriter directlcd = new PrintWriter(new File("/sys/class/leds/lcd-backlight/brightness"))) {
-                    directlcd.print(mDisplayPowerRequest.policy == DisplayPowerRequest.POLICY_DOZE ? 0 : screenBrightness);
+                    directlcd.print(0);
                 } catch (Exception e) { }
             }
 

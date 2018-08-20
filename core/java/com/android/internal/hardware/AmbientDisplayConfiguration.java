@@ -101,6 +101,12 @@ public class AmbientDisplayConfiguration {
                 && !accessibilityInversionEnabled(user);
     }
 
+    public boolean alwaysOnSettingEnabled(int user) {
+        return boolSettingDefaultOn(Settings.Secure.DOZE_ALWAYS_ON, user)
+                && alwaysOnAvailable()
+                && !accessibilityInversionEnabled(user);
+    }
+
     public boolean alwaysOnHidden(int user) {
         return !boolSettingDefaultOn(Settings.Secure.DOZE_ALWAYS_ON, user)
                 && Resources.getSystem().getBoolean(R.bool.config_enableSignBoard)
