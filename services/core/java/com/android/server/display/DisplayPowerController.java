@@ -270,6 +270,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
     // If the last recorded screen state was dozing or not.
     private boolean mDozing;
+    private boolean mBrightnessReset = true;
 
     // Remembers whether certain kinds of brightness adjustments
     // were recently applied so that we can decide how to transition.
@@ -823,9 +824,17 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
             }
         }
 
-        if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT)) {
+        if (mAmbientDisplayConfiguration.alwaysOnHidden(UserHandle.USER_CURRENT)
+                && (mPowerRequest.dozeScreenState != Display.STATE_UNKNOWN || !mBrightnessReset)) {
             try (PrintWriter directlcd = new PrintWriter(new File("/sys/class/leds/lcd-backlight/brightness"))) {
-                directlcd.print(mPowerRequest.dozeScreenState != Display.STATE_UNKNOWN ? 0 : brightness);
+                if (mPowerRequest.dozeScreenState != Display.STATE_UNKNOWN) {
+                    directlcd.print(0);
+                    mBrightnessReset = false;
+                } else if (!mBrightnessReset) {
+                    if (brightness == 0) brightness = PowerManager.BRIGHTNESS_DEFAULT;
+                    directlcd.print(brightness);
+                    mBrightnessReset = true;
+                }
             } catch (Exception e) { }
         }
 
